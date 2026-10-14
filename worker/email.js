@@ -62,7 +62,22 @@ export function contactMail(x, env) {
     `<p>From: ${escapeHtml(x.name)} &lt;${escapeHtml(x.email)}&gt;</p><p>${escapeHtml(x.message).replace(/\n/g, "<br>")}</p>`,
   );
 }
-export function outboxStatement(env, m) {
+export function outboxStatement(env, m, decision = null) {
+  if (decision) {
+    return env.DB.prepare(
+      "INSERT INTO notification_outbox(id,kind,to_email,reply_to,subject,html,text) SELECT ?,?,?,?,?,?,? WHERE EXISTS (SELECT 1 FROM booking_requests WHERE id = ? AND decision_token = ?)",
+    ).bind(
+      m.id,
+      m.kind,
+      m.to_email,
+      m.reply_to,
+      m.subject,
+      m.html,
+      m.text,
+      decision.id,
+      decision.token,
+    );
+  }
   return env.DB.prepare(
     "INSERT INTO notification_outbox(id,kind,to_email,reply_to,subject,html,text) VALUES(?,?,?,?,?,?,?)",
   ).bind(m.id, m.kind, m.to_email, m.reply_to, m.subject, m.html, m.text);

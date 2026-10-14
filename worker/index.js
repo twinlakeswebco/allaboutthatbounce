@@ -288,17 +288,18 @@ async function status(req, env, ctx, id, email) {
   if (!r || r.status !== "pending")
     return fail("This request is no longer pending. Refresh the list.", 409);
   const m = decisionMail(r, x.status);
+  const decisionToken = crypto.randomUUID();
   try {
     let st;
     if (x.status === "confirmed")
       st = env.DB.prepare(
-        "UPDATE booking_requests SET status='confirmed',decided_at=datetime('now'),decided_by=? WHERE id=? AND status='pending' AND NOT EXISTS(SELECT 1 FROM blocks WHERE unit_id=booking_requests.unit_id AND date=booking_requests.event_date)",
-      ).bind(email, id);
+        "UPDATE booking_requests SET status='confirmed',decided_at=datetime('now'),decided_by=?,decision_token=? WHERE id=? AND status='pending' AND NOT EXISTS(SELECT 1 FROM blocks WHERE unit_id=booking_requests.unit_id AND date=booking_requests.event_date)",
+      ).bind(email, decisionToken, id);
     else
       st = env.DB.prepare(
-        "UPDATE booking_requests SET status='declined',decided_at=datetime('now'),decided_by=? WHERE id=? AND status='pending'",
-      ).bind(email, id);
-    const results = await env.DB.batch([st, outboxStatement(env, m)]);
+        "UPDATE booking_requests SET status='declined',decided_at=datetime('now'),decided_by=?,decision_token=? WHERE id=? AND status='pending'",
+      ).bind(email, decisionToken, id);
+    const results = await env.DB.batch([st, outboxStatement(env, m, { id, token: decisionToken })]);
     if (!results[0].meta.changes)
       return fail(
         x.status === "confirmed"
