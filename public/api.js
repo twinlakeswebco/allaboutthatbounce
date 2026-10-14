@@ -25,7 +25,7 @@ const seeds = [
     size: "20 × 12 ft · capacity pending",
     mode: "wet",
     price: 250,
-    photos: ["placeholder.svg"],
+    photos: ["assets/slide.jpg"],
     deposit_required: false,
   },
   {
@@ -36,14 +36,14 @@ const seeds = [
     size: "25 × 15 ft · capacity pending",
     mode: "dry",
     price: 325,
-    photos: ["placeholder.svg"],
+    photos: ["assets/pink-purple.jpg"],
     deposit_required: false,
   },
 ];
 function read() {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw
+    const state = raw
       ? JSON.parse(raw)
       : {
           units: seeds,
@@ -52,6 +52,21 @@ function read() {
           requests: [],
           messages: [],
         };
+    if (!state.preview_photos_version) {
+      for (const unit of state.units) {
+        const seed = seeds.find((item) => item.id === unit.id);
+        if (
+          seed &&
+          unit.photos?.length === 1 &&
+          unit.photos[0] === "placeholder.svg"
+        ) {
+          unit.photos = [...seed.photos];
+        }
+      }
+      state.preview_photos_version = 1;
+      if (raw) write(state);
+    }
+    return state;
   } catch {
     throw new Error(
       "Demo storage is unavailable. Enable browser storage and try again.",

@@ -52,6 +52,7 @@ export function validate(form) {
 export function safePhoto(src) {
   return typeof src === "string" &&
     (/^(placeholder\.svg|data:image\/(jpeg|png|webp);base64,)/.test(src) ||
+      /^assets\/[a-zA-Z0-9_-]+\.(?:png|jpe?g|webp)$/.test(src) ||
       /^https:\/\//.test(src))
     ? src
     : "placeholder.svg";
