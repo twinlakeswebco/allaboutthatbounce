@@ -2,12 +2,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/*.test.mjs",
-    "test:contract": "node test-api.mjs",
-    "format": "prettier --write \"worker/**/*.js\" \"public/**/*.{html,css,js}\" \"tests/**/*.mjs\" test-api.mjs wrangler.jsonc",
-    "format:check": "prettier --check \"worker/**/*.js\" \"public/**/*.{html,css,js}\" \"tests/**/*.mjs\" test-api.mjs wrangler.jsonc"
+    "test": "vitest run --reporter=verbose",
+    "format": "prettier --write \"worker/**/*.js\" \"public/**/*.{html,css,js}\" \"tests/**/*.mjs\" test-api.mjs wrangler.jsonc vitest.config.mjs",
+    "format:check": "prettier --check \"worker/**/*.js\" \"public/**/*.{html,css,js}\" \"tests/**/*.mjs\" test-api.mjs wrangler.jsonc vitest.config.mjs",
+    "test:smoke": "node test-api.mjs"
   },
   "devDependencies": {
-    "prettier": "^3.9.10"
+    "@cloudflare/vitest-pool-workers": "^0.8.71",
+    "prettier": "^3.9.10",
+    "vitest": "~3.2.0"
   }
 }

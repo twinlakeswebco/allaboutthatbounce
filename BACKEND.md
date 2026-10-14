@@ -33,7 +33,7 @@ Run locally and deploy:
 ```sh
 npx wrangler d1 migrations apply allaboutthatbounce --local
 npx wrangler dev
-node test-api.mjs
+npm run test:smoke
 npx wrangler d1 migrations apply allaboutthatbounce --remote
 npx wrangler deploy
 ```
@@ -51,3 +51,11 @@ The Worker stores prices as cents and converts to dollar numbers only at the API
 ## Unit removal
 
 Units are soft deleted. Pending or confirmed requests block removal only when their event date is today or later in America/New_York. Past requests retain their unit name and price snapshots. Removal also deletes unit photo rows, matching R2 objects, and manual blocks. The blocked-case error message is unchanged.
+
+## Automated verification
+
+`npm ci` followed by `npm test` runs the complete Vitest suite with local Miniflare D1/R2 storage. Real numbered migrations are applied by `readD1Migrations` and `applyD1Migrations`, with the sample seed excluded before files are read. Every secret and variable is overridden with a fake test value. External calls are mocked with `fetchMock` and real network connections are disabled.
+
+Against a running `wrangler dev` server, `npm run test:smoke` checks only `/api/units`, `/api/settings`, and `/api/units/:id/blocked-dates`. It is a smoke test, not contract verification. It does not replace the Vitest suite or verify production integrations.
+
+The compatible test pool retains the requested `fetchMock` API. Its installed workerd supports compatibility dates through 2025-09-06, so the local test run falls back from the configured 2026-10-14 date. The suite adds `nodejs_compat` only for the test harness. Production compatibility-date behavior is not verified. An existing `public/_redirects` rule also produces an ignored redirect-loop warning; it was left unchanged. See `TEST-RESULTS.md` for the complete captured test output and verification limits.

@@ -16,7 +16,7 @@ All deployed files are flat inside `public/`:
 - `_headers`: security headers and admin noindex/no-store.
 - `_redirects`: maps `/` to `index.html` while keeping explicit `.html` page routes.
 
-Root files: `wrangler.jsonc` deploy configuration, `test-api.mjs` API checks, and product/design notes. Existing reference documents at repository root are **not** included in deployed assets. Never change the assets directory to the repository root.
+Root files: `wrangler.jsonc` deploy configuration, `test-api.mjs` three-route GET smoke test, and product/design notes. Existing reference documents at repository root are **not** included in deployed assets. Never change the assets directory to the repository root.
 
 ## Run locally
 
@@ -29,7 +29,7 @@ Open http://localhost:8080/index.html and http://localhost:8080/admin.html in th
 Run checks with Node 20+:
 
 ```sh
-node test-api.mjs
+npm run test:smoke
 ```
 
 ## Cloudflare Workers static assets
@@ -159,6 +159,16 @@ Validate customer input server-side, protect admin endpoints with Access, and us
 - Only “serves the La Grange, Kentucky area” is used for company geography. No private origin or business street address is in deployed code or metadata.
 - Public demo banners must be replaced with truthful live messages only when the real API and notifications exist.
 
-## Verification performed
+## Historical frontend demo verification
 
-API checks passed. Headless Chromium checks passed for all five routes at 360px with no horizontal overflow or JavaScript errors; booking → pending request → admin confirmation → unavailable date; 15/16/20-mile fee examples; outside-area submission blocking; inventory CRUD; manual blocking/unblocking; contact validation and demo save. Mobile route screenshots and a desktop homepage screenshot were inspected. These checks verify the browser-local demo, not a future Worker/D1 implementation or production deployment.
+The original frontend demo checks passed. Headless Chromium checks passed for all five routes at 360px with no horizontal overflow or JavaScript errors; booking → pending request → admin confirmation → unavailable date; 15/16/20-mile fee examples; outside-area submission blocking; inventory CRUD; manual blocking/unblocking; contact validation and demo save. Mobile route screenshots and a desktop homepage screenshot were inspected. These checks verify the browser-local demo, not a future Worker/D1 implementation or production deployment.
+
+## Automated Worker tests
+
+Run `npm ci` and `npm test` for all unit and D1/R2 integration coverage in Vitest with Miniflare. `vitest.config.mjs` loads `wrangler.jsonc`, supplies fake values for every variable and secret, and exposes only numbered files from `migrations/` to `readD1Migrations`. Setup applies them using `applyD1Migrations`; it never reads or loads `seed_sample.sql`. Each test receives isolated D1 and R2 storage.
+
+Outbound requests are intercepted with `fetchMock` from `cloudflare:test`, with `disableNetConnect` enabled. Turnstile, Resend, Google Routes, and Access certificates use mocks. Access JWTs are signed with an RSA key generated in test setup. The suite checks responses and stored data, including decision races and rollback.
+
+`npm run test:smoke` checks only the three public GET routes against a running `wrangler dev` server. It is a smoke test, not contract verification. Full automated coverage lives in Vitest. These tests do not verify deployed Cloudflare resources, real provider credentials or services, or browser interaction.
+
+The compatible test pool retains the requested `fetchMock` API. Its installed workerd supports compatibility dates through 2025-09-06, so the local test run falls back from the configured 2026-10-14 date. The suite adds `nodejs_compat` only for the test harness. Production compatibility-date behavior is not verified. An existing `public/_redirects` rule also produces an ignored redirect-loop warning; it was left unchanged. See `TEST-RESULTS.md` for the complete captured test output and verification limits.

@@ -9,11 +9,10 @@ async function req(path, options = {}) {
 const units = await req("/api/units");
 assert.ok(Array.isArray(units));
 const settings = await req("/api/settings");
-assert.equal(settings.free_radius_miles, 15);
-assert.equal(settings.per_mile_rate, 0.35);
-assert.equal(settings.trip_multiplier, 4);
-if (units[0]) {
-  const dates = await req(`/api/units/${encodeURIComponent(units[0].id)}/blocked-dates`);
-  assert.ok(Array.isArray(dates));
-}
-console.log("API contract checks passed against " + base + ".");
+assert.equal(typeof settings.free_radius_miles, "number");
+assert.equal(typeof settings.per_mile_rate, "number");
+assert.equal(typeof settings.trip_multiplier, "number");
+const unitId = units[0]?.id || "smoke-missing-unit";
+const dates = await req(`/api/units/${encodeURIComponent(unitId)}/blocked-dates`);
+assert.ok(Array.isArray(dates));
+console.log("API smoke test passed: three GET routes against " + base + ".");

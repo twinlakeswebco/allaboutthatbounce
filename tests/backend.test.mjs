@@ -1,4 +1,4 @@
-import test from "node:test";
+import { test } from "vitest";
 import assert from "node:assert/strict";
 import { calculateQuote } from "../worker/distance.js";
 import { decodePhoto } from "../worker/storage.js";
