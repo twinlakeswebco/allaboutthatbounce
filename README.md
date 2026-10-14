@@ -32,6 +32,17 @@ Run checks with Node 20+:
 node test-api.mjs
 ```
 
+## GitHub Pages frontend preview
+
+Enable GitHub Pages in repository Settings → Pages, with GitHub Actions as the
+publishing source. `.github/workflows/preview-pages.yml` publishes only `public/`
+when website files change on `main`, or when run manually. Repository-root
+reference documents and backend files are excluded.
+
+Preview URL: `https://twinlakeswebco.github.io/allaboutthatbounce/` (no `/public`
+suffix). This publishes the browser-storage frontend demo on `main`; the Worker
+backend is deployed separately to Cloudflare. GitHub Pages cannot run the Worker.
+
 ## Cloudflare Workers static assets
 
 ```sh
