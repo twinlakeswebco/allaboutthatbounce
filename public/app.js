@@ -118,6 +118,7 @@ async function init() {
       } catch (err) {
         $("contact-status").textContent = err.message;
       } finally {
+        window.turnstile?.reset();
         busy = false;
         btn.disabled = false;
         btn.textContent = "Send message";
@@ -325,6 +326,7 @@ async function booking() {
       if (blocked.includes($("date").value)) $("date").value = "";
       drawCalendar();
     } finally {
+      window.turnstile?.reset();
       busy = false;
       submit.textContent = "Send Booking Request";
       totals();
