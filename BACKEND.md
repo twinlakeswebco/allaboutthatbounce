@@ -48,3 +48,6 @@ npx wrangler deploy
 - Set `SITE_ORIGIN` to the exact production origin, including `https://` and no trailing path.
 
 The Worker stores prices as cents and converts to dollar numbers only at the API boundary. Customer delivery addresses are retained only on booking requests for the stated retention period; quote caching stores only a SHA-256 address hash and distance. Client IPs are never stored raw; rate-limit keys use HMAC-SHA-256.
+## Unit removal
+
+Units are soft deleted. Pending or confirmed requests block removal only when their event date is today or later in America/New_York. Past requests retain their unit name and price snapshots. Removal also deletes unit photo rows, matching R2 objects, and manual blocks. The blocked-case error message is unchanged.

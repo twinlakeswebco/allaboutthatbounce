@@ -56,7 +56,7 @@ All data functions return Promises and reject on failure (human-readable `Error.
 | `listBookingRequests()` | None | `BookingRequest[]` for admin |
 | `setBookingStatus(id, status)` | Request ID, `"confirmed"` or `"declined"` | Updated `BookingRequest`; confirmation blocks that unit/date |
 | `saveUnit(unit)` | `Unit` without ID for creation; with ID for update | Saved `Unit` |
-| `deleteUnit(id)` | Unit ID | `{ "deleted": true }`; rejects when pending/confirmed requests exist |
+| `deleteUnit(id)` | Unit ID | `{ "deleted": true }`; rejects for pending/confirmed requests dated today or later in America/New_York |
 | `blockDate(unitId, date)` | Unit ID and date string | `{ "unit_id": string, "date": string, "blocked": true }` |
 | `unblockDate(unitId, date)` | Unit ID and date string | Same shape with `blocked: false`; rejects for confirmed rentals |
 | `sendContactMessage(input)` | `{ name: string, email: string, message: string }` | `{ id: string, status: "received" }`; future stub route `POST /api/contact` |
@@ -152,7 +152,7 @@ Validate customer input server-side, protect admin endpoints with Access, and us
 - One unit per request; rental price covers the requested date. Duration/times are not supplied.
 - A request remains pending until a human confirms; confirmation does not send notifications in this frontend demo.
 - Cash or check only. Deposit toggle enables a notice, never online collection.
-- Unit removal is conservatively blocked for pending or confirmed requests to preserve their history.
+- Unit removal is a soft delete, blocked only for pending or confirmed requests with an event date of today or later in America/New_York. Past requests retain their unit name and price snapshots. Removal deletes unit photo rows, matching R2 objects, and manual blocks.
 - The palette is provisional; edit variables at the top of `styles.css`. System fonts satisfy the no-unnecessary-font-dependencies requirement.
 - All inventory, prices, photos, review text, owner story, and policies are visibly marked sample/placeholder. Replace and approve before launch.
 - Open Graph assumes the existing `allaboutthatbounceky.net` domain from supplied notes; change the absolute `og:image` URL on each HTML page if the final domain changes. `share.png` is a local 1200×630 placeholder image.

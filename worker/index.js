@@ -372,21 +372,26 @@ async function saveUnitRoute(req, env, id) {
 async function deleteUnit(env, id) {
   if (
     await env.DB.prepare(
-      "SELECT 1 AS x FROM booking_requests WHERE unit_id=? AND status IN ('pending','confirmed') LIMIT 1",
+      "SELECT 1 AS x FROM booking_requests WHERE unit_id=? AND status IN ('pending','confirmed') AND event_date>=? LIMIT 1",
     )
-      .bind(id)
+      .bind(id, nyToday())
       .first()
   )
     return fail(
       "This inflatable has pending or confirmed requests. Keep it until those requests are resolved.",
       409,
     );
+  const photos = await env.DB.prepare("SELECT r2_key FROM unit_photos WHERE unit_id=?")
+    .bind(id)
+    .all();
   await env.DB.batch([
     env.DB.prepare(
       "UPDATE units SET deleted_at=datetime('now'),updated_at=datetime('now') WHERE id=?",
     ).bind(id),
     env.DB.prepare("DELETE FROM blocks WHERE unit_id=?").bind(id),
+    env.DB.prepare("DELETE FROM unit_photos WHERE unit_id=?").bind(id),
   ]);
+  await Promise.all((photos.results || []).map((photo) => env.PHOTOS.delete(photo.r2_key)));
   return json({ deleted: true });
 }
 async function block(env, id, date, email, on) {
