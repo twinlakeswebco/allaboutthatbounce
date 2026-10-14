@@ -28,3 +28,15 @@ test("distance quote object cannot expose origin", () => {
   const body = JSON.stringify(calculateQuote(16, s));
   assert.equal(body.includes(origin), false);
 });
+
+test("fractional mile uses integer cents", () => assert.equal(calculateQuote(15.1, s).fee, 21.14));
+
+import { settingsError } from "../worker/validation.js";
+for (const rate of [0.29, 0.07, 0.57, 0.58, 0.55]) {
+  test(`accept cent rate ${rate}`, () =>
+    assert.equal(settingsError({ ...s, per_mile_rate: rate }), null));
+}
+for (const rate of [0.355, -1, NaN, "0.35"]) {
+  test(`reject invalid rate ${rate}`, () =>
+    assert.ok(settingsError({ ...s, per_mile_rate: rate })));
+}

@@ -41,7 +41,7 @@ export function settingsError(s) {
     if (!Number.isFinite(s?.[k]) || s[k] < 0) return "Enter valid delivery settings.";
   if (!Number.isInteger(s.trip_multiplier) || s.trip_multiplier < 1)
     return "Enter valid delivery settings.";
-  if (Math.round(s.per_mile_rate * 100) !== s.per_mile_rate * 100)
+  if (Math.abs(Math.round(s.per_mile_rate * 100) - s.per_mile_rate * 100) > 1e-9)
     return "Enter valid delivery settings.";
   if (
     s.max_delivery_miles !== null &&

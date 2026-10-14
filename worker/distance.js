@@ -10,13 +10,16 @@ export const normalizeAddress = (s) =>
     .replace(/\s+/g, " ")
     .toLowerCase();
 export function calculateQuote(distance, s) {
-  const d = Math.round(distance * 10) / 10;
+  const distanceTenths = Math.round(distance * 10);
+  const d = distanceTenths / 10;
   if (s.max_delivery_miles !== null && d > s.max_delivery_miles)
     return { distance_miles: d, fee: 0, status: "outside_area" };
   if (d <= s.free_radius_miles) return { distance_miles: d, fee: 0, status: "free" };
   return {
     distance_miles: d,
-    fee: Number((d * s.per_mile_rate * s.trip_multiplier).toFixed(2)),
+    fee:
+      Math.round((distanceTenths * Math.round(s.per_mile_rate * 100) * s.trip_multiplier) / 10) /
+      100,
     status: "fee",
   };
 }
