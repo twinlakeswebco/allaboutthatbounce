@@ -7,15 +7,17 @@
     "directory": "./public",
     "html_handling": "none",
     "not_found_handling": "none",
-    "run_worker_first": ["/api/*", "/media/*"]
+    "run_worker_first": ["/api/*", "/media/*"],
   },
-  "d1_databases": [{
-    "binding": "DB",
-    "database_name": "allaboutthatbounce",
-    "database_id": "REPLACE_WITH_D1_DATABASE_ID"
-  }],
-  "r2_buckets": [{"binding": "PHOTOS", "bucket_name": "allaboutthatbounce-photos"}],
-  "triggers": {"crons": ["*/15 * * * *"]},
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "allaboutthatbounce",
+      "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+    },
+  ],
+  "r2_buckets": [{ "binding": "PHOTOS", "bucket_name": "allaboutthatbounce-photos" }],
+  "triggers": { "crons": ["*/15 * * * *"] },
   "vars": {
     "OWNER_EMAIL": "allaboutthatbounce7596@gmail.com",
     "FROM_EMAIL": "All About That Bounce <bookings@example.com>",
@@ -23,6 +25,6 @@
     "ACCESS_TEAM_DOMAIN": "example.cloudflareaccess.com",
     "ACCESS_AUD": "REPLACE_WITH_ACCESS_AUD",
     "ADMIN_EMAILS": "owner@example.com",
-    "TURNSTILE_SITE_KEY": "REPLACE_WITH_TURNSTILE_SITE_KEY"
-  }
+    "TURNSTILE_SITE_KEY": "REPLACE_WITH_TURNSTILE_SITE_KEY",
+  },
 }

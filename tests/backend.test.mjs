@@ -1,6 +1,30 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {calculateQuote} from '../worker/distance.js';import {decodePhoto} from '../worker/storage.js';
-const s={free_radius_miles:15,per_mile_rate:.35,trip_multiplier:4,max_delivery_miles:null};
-test('delivery fee examples and boundary',()=>{assert.deepEqual(calculateQuote(15,s),{distance_miles:15,fee:0,status:'free'});assert.deepEqual(calculateQuote(16,s),{distance_miles:16,fee:22.4,status:'fee'});assert.deepEqual(calculateQuote(20,s),{distance_miles:20,fee:28,status:'fee'});});
-test('maximum delivery distance',()=>assert.deepEqual(calculateQuote(26,{...s,max_delivery_miles:25}),{distance_miles:26,fee:0,status:'outside_area'}));
-test('photo magic bytes reject fake image',()=>{const fake='data:image/png;base64,'+Buffer.from('not an image').toString('base64');assert.throws(()=>decodePhoto(fake),/PNG, JPEG, or WebP/);});
-test('distance quote object cannot expose origin',()=>{const origin='private-origin-sentinel';const body=JSON.stringify(calculateQuote(16,s));assert.equal(body.includes(origin),false);});
+import test from "node:test";
+import assert from "node:assert/strict";
+import { calculateQuote } from "../worker/distance.js";
+import { decodePhoto } from "../worker/storage.js";
+const s = {
+  free_radius_miles: 15,
+  per_mile_rate: 0.35,
+  trip_multiplier: 4,
+  max_delivery_miles: null,
+};
+test("delivery fee examples and boundary", () => {
+  assert.deepEqual(calculateQuote(15, s), { distance_miles: 15, fee: 0, status: "free" });
+  assert.deepEqual(calculateQuote(16, s), { distance_miles: 16, fee: 22.4, status: "fee" });
+  assert.deepEqual(calculateQuote(20, s), { distance_miles: 20, fee: 28, status: "fee" });
+});
+test("maximum delivery distance", () =>
+  assert.deepEqual(calculateQuote(26, { ...s, max_delivery_miles: 25 }), {
+    distance_miles: 26,
+    fee: 0,
+    status: "outside_area",
+  }));
+test("photo magic bytes reject fake image", () => {
+  const fake = "data:image/png;base64," + Buffer.from("not an image").toString("base64");
+  assert.throws(() => decodePhoto(fake), /PNG, JPEG, or WebP/);
+});
+test("distance quote object cannot expose origin", () => {
+  const origin = "private-origin-sentinel";
+  const body = JSON.stringify(calculateQuote(16, s));
+  assert.equal(body.includes(origin), false);
+});

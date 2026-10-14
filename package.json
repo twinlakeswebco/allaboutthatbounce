@@ -1,1 +1,13 @@
-{"private":true,"type":"module","scripts":{"test":"node --test tests/*.test.mjs","test:contract":"node test-api.mjs"}}
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "test:contract": "node test-api.mjs",
+    "format": "prettier --write \"worker/**/*.js\" \"public/**/*.{html,css,js}\" \"tests/**/*.mjs\" test-api.mjs wrangler.jsonc",
+    "format:check": "prettier --check \"worker/**/*.js\" \"public/**/*.{html,css,js}\" \"tests/**/*.mjs\" test-api.mjs wrangler.jsonc"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.10"
+  }
+}

@@ -34,11 +34,7 @@ async function refresh() {
         ["confirmed", "Confirm request"],
         ["declined", "Decline request"],
       ]) {
-        const btn = text(
-          "button",
-          label,
-          status === "declined" ? "danger" : "",
-        );
+        const btn = text("button", label, status === "declined" ? "danger" : "");
         btn.onclick = () =>
           run("admin-status", async () => {
             if (
@@ -66,11 +62,8 @@ async function refresh() {
     } else $("history").append(box);
   }
   if (!$("pending").children.length)
-    $("pending").append(
-      text("p", "No pending requests. You’re all caught up.", "empty"),
-    );
-  if (!$("history").children.length)
-    $("history").append(text("p", "No past decisions yet."));
+    $("pending").append(text("p", "No pending requests. You’re all caught up.", "empty"));
+  if (!$("history").children.length) $("history").append(text("p", "No past decisions yet."));
   $("unit-list").replaceChildren();
   const selected = $("calendar-unit").value;
   $("calendar-unit").replaceChildren();
@@ -97,9 +90,7 @@ async function refresh() {
   }
   if (units.some((u) => u.id === selected)) $("calendar-unit").value = selected;
   if (!units.length)
-    $("unit-list").append(
-      text("p", "No inflatables yet. Add your first one below."),
-    );
+    $("unit-list").append(text("p", "No inflatables yet. Add your first one below."));
   await refreshDates();
 }
 async function refreshDates() {
@@ -116,29 +107,22 @@ async function refreshDates() {
       text(
         "p",
         date +
-          (requests.some(
-            (r) =>
-              r.unit_id === id && r.date === date && r.status === "confirmed",
-          )
+          (requests.some((r) => r.unit_id === id && r.date === date && r.status === "confirmed")
             ? " · confirmed rental"
             : " · manually blocked"),
       ),
     );
   }
-  if (!dates.length)
-    $("blocked-list").textContent = "No blocked dates for this inflatable.";
+  if (!dates.length) $("blocked-list").textContent = "No blocked dates for this inflatable.";
 }
 function editUnit(u) {
   const form = $("unit-form");
   form.reset();
   report("unit-status", "");
-  form
-    .querySelectorAll("[aria-invalid]")
-    .forEach((e) => e.removeAttribute("aria-invalid"));
+  form.querySelectorAll("[aria-invalid]").forEach((e) => e.removeAttribute("aria-invalid"));
   form.querySelectorAll(".error").forEach((e) => (e.textContent = ""));
   for (const key of ["id", "name", "description", "size", "mode", "price"])
-    form.elements.namedItem(key).value =
-      u?.[key] ?? (key === "mode" ? "dry" : "");
+    form.elements.namedItem(key).value = u?.[key] ?? (key === "mode" ? "dry" : "");
   form.elements.deposit_required.checked = u?.deposit_required || false;
   editingPhotos = u?.photos || ["placeholder.svg"];
   $("unit-heading").textContent = u ? "Edit inflatable" : "Add inflatable";
@@ -163,17 +147,11 @@ $("unit-form").addEventListener("submit", (e) => {
       if (
         files.length > 3 ||
         files.some(
-          (f) =>
-            f.size > 500 * 1024 ||
-            !["image/jpeg", "image/png", "image/webp"].includes(f.type),
+          (f) => f.size > 500 * 1024 || !["image/jpeg", "image/png", "image/webp"].includes(f.type),
         )
       )
-        throw new Error(
-          "Choose up to 3 JPEG, PNG, or WebP photos, each under 500 KB.",
-        );
-      let photos = $("remove-photos").checked
-        ? ["placeholder.svg"]
-        : editingPhotos;
+        throw new Error("Choose up to 3 JPEG, PNG, or WebP photos, each under 500 KB.");
+      let photos = $("remove-photos").checked ? ["placeholder.svg"] : editingPhotos;
       if (files.length)
         photos = await Promise.all(
           files.map(
@@ -230,21 +208,14 @@ $("dates-form").addEventListener("submit", (e) => {
   run("dates-status", async () => {
     const data = Object.fromEntries(new FormData(form));
     if (e.submitter.value === "unblock") {
-      if (
-        !confirm(
-          `Unblock ${data.date}? Customers will be able to request this date.`,
-        )
-      )
-        return;
+      if (!confirm(`Unblock ${data.date}? Customers will be able to request this date.`)) return;
       await api.unblockDate(data.unit_id, data.date);
     } else await api.blockDate(data.unit_id, data.date);
     await refreshDates();
     report("dates-status", "Calendar updated.");
   });
 });
-$("calendar-unit").addEventListener("change", () =>
-  run("dates-status", refreshDates),
-);
+$("calendar-unit").addEventListener("change", () => run("dates-status", refreshDates));
 $("block-date").min = api.localDate();
 run("admin-status", async () => {
   await refresh();

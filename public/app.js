@@ -1,9 +1,7 @@
 import * as api from "./api.js";
 export const $ = (id) => document.getElementById(id);
 export const money = (n) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
-    n,
-  );
+  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
 export function text(tag, value, className) {
   const e = document.createElement(tag);
   e.textContent = value;
@@ -26,9 +24,7 @@ export function setupMenu() {
 }
 export function validate(form) {
   let first;
-  for (const el of form.querySelectorAll(
-    "input:not([type=hidden]),select,textarea",
-  )) {
+  for (const el of form.querySelectorAll("input:not([type=hidden]),select,textarea")) {
     if (el.disabled) continue;
     let message = el.validity.valueMissing
       ? "Please complete this field."
@@ -37,8 +33,7 @@ export function validate(form) {
         : !el.validity.valid
           ? "Enter a valid value within the allowed range."
           : "";
-    if (el.required && el.value.trim() === "")
-      message = "Please complete this field.";
+    if (el.required && el.value.trim() === "") message = "Please complete this field.";
     if (el.type === "tel" && el.value.replace(/\D/g, "").length < 10)
       message = "Enter a phone number with at least 10 digits.";
     const err = $(el.id + "-error");
@@ -51,8 +46,7 @@ export function validate(form) {
 }
 export function safePhoto(src) {
   return typeof src === "string" &&
-    (/^(placeholder\.svg|data:image\/(jpeg|png|webp);base64,)/.test(src) ||
-      /^https:\/\//.test(src))
+    (/^(placeholder\.svg|data:image\/(jpeg|png|webp);base64,)/.test(src) || /^https:\/\//.test(src))
     ? src
     : "placeholder.svg";
 }
@@ -104,8 +98,7 @@ async function init() {
     $("featured").replaceChildren();
     for (const u of featured.slice(0, 3)) $("featured").append(unitCard(u));
     if (!$("featured").children.length)
-      $("featured").textContent =
-        "New inflatables are on the way. Call us to discuss your event.";
+      $("featured").textContent = "New inflatables are on the way. Call us to discuss your event.";
   }
   if (page === "contact") {
     const form = $("contact-form");
@@ -158,9 +151,7 @@ async function booking() {
         : money(quote.fee)
       : "Enter address";
     $("total-price").textContent =
-      quote?.status === "outside_area"
-        ? "Unavailable"
-        : money(unit.price + (quote?.fee || 0));
+      quote?.status === "outside_area" ? "Unavailable" : money(unit.price + (quote?.fee || 0));
     submit.disabled =
       busy ||
       loading ||
@@ -184,8 +175,7 @@ async function booking() {
     );
     const today = new Date();
     prev.disabled =
-      month.getFullYear() === today.getFullYear() &&
-      month.getMonth() === today.getMonth();
+      month.getFullYear() === today.getFullYear() && month.getMonth() === today.getMonth();
     prev.onclick = () => {
       month.setMonth(month.getMonth() - 1);
       drawCalendar();
@@ -197,15 +187,9 @@ async function booking() {
     head.append(prev, label, next);
     root.append(head);
     const days = text("div", "", "days");
-    ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].forEach((d) =>
-      days.append(text("span", d)),
-    );
+    ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].forEach((d) => days.append(text("span", d)));
     for (let i = 0; i < month.getDay(); i++) days.append(text("span", ""));
-    const count = new Date(
-      month.getFullYear(),
-      month.getMonth() + 1,
-      0,
-    ).getDate();
+    const count = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
     for (let n = 1; n <= count; n++) {
       const d = new Date(month.getFullYear(), month.getMonth(), n),
         iso = api.localDate(d);
@@ -316,11 +300,7 @@ async function booking() {
       if (valid) $("calendar").querySelector("button:not(:disabled)")?.focus();
     }
     if (!valid || !$("date").value) return;
-    if (
-      !quote ||
-      quote.status === "outside_area" ||
-      address.value.trim() !== quotedAddress
-    ) {
+    if (!quote || quote.status === "outside_area" || address.value.trim() !== quotedAddress) {
       $("booking-status").textContent =
         "Wait for an eligible delivery estimate before sending your request.";
       return;

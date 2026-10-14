@@ -1,7 +1,89 @@
-import {fail} from './validation.js';
-const enc=new TextEncoder();
-export async function sha256Hex(s){const b=await crypto.subtle.digest('SHA-256',enc.encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}
-export const normalizeAddress=s=>String(s||'').trim().replace(/\s+/g,' ').toLowerCase();
-export function calculateQuote(distance,s){const d=Math.round(distance*10)/10;if(s.max_delivery_miles!==null&&d>s.max_delivery_miles)return {distance_miles:d,fee:0,status:'outside_area'};if(d<=s.free_radius_miles)return {distance_miles:d,fee:0,status:'free'};return {distance_miles:d,fee:Number((d*s.per_mile_rate*s.trip_multiplier).toFixed(2)),status:'fee'};}
-async function googleDistance(address,env){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),5000);try{const r=await fetch('https://routes.googleapis.com/directions/v2:computeRoutes',{method:'POST',signal:controller.signal,headers:{'content-type':'application/json','X-Goog-Api-Key':env.GOOGLE_MAPS_API_KEY,'X-Goog-FieldMask':'routes.distanceMeters'},body:JSON.stringify({origin:{address:env.ORIGIN_ADDRESS},destination:{address},travelMode:'DRIVE'})});if(r.status===400||r.status===404||r.status===422)return null;if(!r.ok)throw new Error('provider');const j=await r.json();const m=j?.routes?.[0]?.distanceMeters;if(!Number.isFinite(m))return null;return m/1609.344;}finally{clearTimeout(timer);}}
-export async function getQuote(address,env,provider=googleDistance){if(typeof address!=='string'||address.trim().length<5)return {error:fail('Enter your complete delivery address.')};const norm=normalizeAddress(address),hash=await sha256Hex(norm);const cached=await env.DB.prepare("SELECT distance_miles FROM quote_cache WHERE address_hash=? AND created_at >= datetime('now','-30 days')").bind(hash).first();let distance=cached?.distance_miles;if(distance==null){try{distance=await provider(address,env);}catch{return {error:fail('We could not calculate delivery right now. Please call or email us.',503)}}if(distance==null)return {error:fail('We could not find that address. Check it and try again.',422)};await env.DB.prepare("INSERT INTO quote_cache(address_hash,distance_miles,created_at) VALUES(?,?,datetime('now')) ON CONFLICT(address_hash) DO UPDATE SET distance_miles=excluded.distance_miles,created_at=excluded.created_at").bind(hash,distance).run();}const row=await env.DB.prepare('SELECT free_radius_miles,per_mile_rate_cents,trip_multiplier,max_delivery_miles FROM settings WHERE id=1').first();return {quote:calculateQuote(distance,{free_radius_miles:row.free_radius_miles,per_mile_rate:row.per_mile_rate_cents/100,trip_multiplier:row.trip_multiplier,max_delivery_miles:row.max_delivery_miles})};}
+import { fail } from "./validation.js";
+const enc = new TextEncoder();
+export async function sha256Hex(s) {
+  const b = await crypto.subtle.digest("SHA-256", enc.encode(s));
+  return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
+}
+export const normalizeAddress = (s) =>
+  String(s || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+export function calculateQuote(distance, s) {
+  const d = Math.round(distance * 10) / 10;
+  if (s.max_delivery_miles !== null && d > s.max_delivery_miles)
+    return { distance_miles: d, fee: 0, status: "outside_area" };
+  if (d <= s.free_radius_miles) return { distance_miles: d, fee: 0, status: "free" };
+  return {
+    distance_miles: d,
+    fee: Number((d * s.per_mile_rate * s.trip_multiplier).toFixed(2)),
+    status: "fee",
+  };
+}
+async function googleDistance(address, env) {
+  const controller = new AbortController(),
+    timer = setTimeout(() => controller.abort(), 5000);
+  try {
+    const r = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        "content-type": "application/json",
+        "X-Goog-Api-Key": env.GOOGLE_MAPS_API_KEY,
+        "X-Goog-FieldMask": "routes.distanceMeters",
+      },
+      body: JSON.stringify({
+        origin: { address: env.ORIGIN_ADDRESS },
+        destination: { address },
+        travelMode: "DRIVE",
+      }),
+    });
+    if (r.status === 400 || r.status === 404 || r.status === 422) return null;
+    if (!r.ok) throw new Error("provider");
+    const j = await r.json();
+    const m = j?.routes?.[0]?.distanceMeters;
+    if (!Number.isFinite(m)) return null;
+    return m / 1609.344;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+export async function getQuote(address, env, provider = googleDistance) {
+  if (typeof address !== "string" || address.trim().length < 5)
+    return { error: fail("Enter your complete delivery address.") };
+  const norm = normalizeAddress(address),
+    hash = await sha256Hex(norm);
+  const cached = await env.DB.prepare(
+    "SELECT distance_miles FROM quote_cache WHERE address_hash=? AND created_at >= datetime('now','-30 days')",
+  )
+    .bind(hash)
+    .first();
+  let distance = cached?.distance_miles;
+  if (distance == null) {
+    try {
+      distance = await provider(address, env);
+    } catch {
+      return {
+        error: fail("We could not calculate delivery right now. Please call or email us.", 503),
+      };
+    }
+    if (distance == null)
+      return { error: fail("We could not find that address. Check it and try again.", 422) };
+    await env.DB.prepare(
+      "INSERT INTO quote_cache(address_hash,distance_miles,created_at) VALUES(?,?,datetime('now')) ON CONFLICT(address_hash) DO UPDATE SET distance_miles=excluded.distance_miles,created_at=excluded.created_at",
+    )
+      .bind(hash, distance)
+      .run();
+  }
+  const row = await env.DB.prepare(
+    "SELECT free_radius_miles,per_mile_rate_cents,trip_multiplier,max_delivery_miles FROM settings WHERE id=1",
+  ).first();
+  return {
+    quote: calculateQuote(distance, {
+      free_radius_miles: row.free_radius_miles,
+      per_mile_rate: row.per_mile_rate_cents / 100,
+      trip_multiplier: row.trip_multiplier,
+      max_delivery_miles: row.max_delivery_miles,
+    }),
+  };
+}

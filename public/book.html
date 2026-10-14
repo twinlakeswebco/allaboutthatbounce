@@ -1,1 +1,213 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>Book | All About That Bounce</title><meta name="description" content="Inflatable rentals serving the La Grange, Kentucky area. Choose an inflatable and send a booking request. Owner confirmation required." /><meta name="theme-color" content="#5632bc" /><meta property="og:title" content="Book | All About That Bounce" /><meta property="og:description" content="Inflatable rentals serving the La Grange, Kentucky area. Choose an inflatable and send a booking request. Owner confirmation required." /><meta property="og:type" content="website" /><meta property="og:image" content="https://allaboutthatbounceky.net/share.png" /><meta property="og:image:width" content="1200" /><meta property="og:image:height" content="630" /><meta property="og:image:alt" content="All About That Bounce — inflatable rentals" /><link rel="icon" href="favicon.svg" type="image/svg+xml" /><link rel="stylesheet" href="styles.css" /><script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script><script type="module" src="app.js"></script></head><body data-page="book"><a class="skip button" href="#main">Skip to content</a><header><div class="wrap header-inner"><a class="brand" href="index.html"><span class="logo" aria-hidden="true">b.</span><span>All About<br />That Bounce<small>Logo placeholder</small></span></a><button id="menu" aria-controls="navigation" aria-expanded="false">Menu</button><nav id="navigation" class="nav" aria-label="Main navigation" hidden><a href="index.html">Home</a><a href="about.html">About</a><a href="book.html" aria-current="page">Book</a><a href="contact.html">Contact</a></nav></div></header><main id="main"><div class="page-head wrap"><h1>Let’s plan some fun.</h1><p><strong>This is a booking request only.</strong> Your date is not booked until the owner confirms it.</p></div><div class="wrap"><div class="demo">Frontend demo: sample inventory, fictional delivery estimates, and requests saved only in this browser. No request is sent to the business.</div><section class="section"><h2>Choose your inflatable.</h2><div class="grid" id="units" aria-live="polite"><p>Loading inflatables…</p></div></section><div id="booking" hidden><div class="booking-layout"><form id="booking-form" class="panel" novalidate><h2>Choose your date.</h2><div id="calendar" class="calendar" role="group" aria-label="Choose an available rental date" aria-describedby="date-error"></div><input type="hidden" name="date" id="date" /><div id="date-error" class="error" role="status"></div><p class="muted">Crossed-out dates are unavailable. A request does not hold a date.</p><h2>Your party details.</h2><div class="form-grid"><div><label for="name">Your name</label><input id="name" name="name" type="text" required autocomplete="name" maxlength="100" aria-describedby="name-error" /><div class="error" id="name-error"></div></div><div><label for="phone">Phone</label><input id="phone" name="phone" type="tel" required autocomplete="tel" maxlength="30" aria-describedby="phone-error" /><div class="error" id="phone-error"></div></div><div><label for="email">Email</label><input id="email" name="email" type="email" required autocomplete="email" maxlength="200" aria-describedby="email-error" /><div class="error" id="email-error"></div></div><div><label for="event_type">Event type</label><select id="event_type" name="event_type" required aria-describedby="event_type-error"><option value="">Choose an event</option><option>Birthday party</option><option>School or community event</option><option>Family celebration</option><option>Other</option></select><div class="error" id="event_type-error"></div></div><div class="wide"><label for="delivery_address">Event delivery address</label><input id="delivery_address" name="delivery_address" type="text" required autocomplete="street-address" maxlength="500" placeholder="Street, city, state, ZIP" aria-describedby="delivery_address-error" /><div class="error" id="delivery_address-error"></div></div></div><div id="quote-status" class="status" aria-live="polite"></div><div id="outside" class="notice" hidden><strong>This address is outside our delivery area.</strong>Please <a href="tel:5028517596">call 502-851-7596</a> or <a href="mailto:allaboutthatbounce7596@gmail.com">email us</a> so the owner can discuss your event personally.</div><div id="deposit" class="notice" hidden>A deposit may be required for this inflatable. The owner will confirm the amount and arrangements. No payment is collected here.</div><div class="notice"><strong>Request only, not a reservation.</strong>The owner must confirm your date and final total. Payment is cash or check.</div><input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-10000px" /><div class="cf-turnstile" data-sitekey="REPLACE_WITH_TURNSTILE_SITE_KEY"></div><button type="submit" id="send-request" disabled>Send Booking Request</button><div id="booking-status" class="status" role="status"></div></form><aside class="panel summary" aria-live="polite"><h2>Your estimate</h2><p id="chosen-name"></p><div class="total"><span>Inflatable</span><span id="unit-price"></span></div><div class="total"><span>Delivery estimate</span><span id="delivery-price">Enter address</span></div><div class="total grand"><span>Estimated total</span><span id="total-price"></span></div><p class="muted">Final availability, delivery, and total are confirmed by the owner.</p></aside></div></div><section id="confirmation" class="panel" tabindex="-1" hidden><h2>Demo request saved.</h2><p><strong>Your date is not booked.</strong> In the live site, the owner will review your request and contact you to confirm availability and the final total.</p><p>This demo saved the request in your browser only. Nothing was sent to the business.</p><p id="request-reference"></p><a class="button" href="book.html">Start another request</a></section></div></main><footer><div class="wrap"><a href="tel:5028517596">502-851-7596</a><a href="mailto:allaboutthatbounce7596@gmail.com">allaboutthatbounce7596@gmail.com</a></div></footer><noscript><p class="wrap">JavaScript is needed for booking and admin tools. Please call or email for help.</p></noscript></body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Book | All About That Bounce</title>
+    <meta
+      name="description"
+      content="Inflatable rentals serving the La Grange, Kentucky area. Choose an inflatable and send a booking request. Owner confirmation required."
+    />
+    <meta name="theme-color" content="#5632bc" />
+    <meta property="og:title" content="Book | All About That Bounce" />
+    <meta
+      property="og:description"
+      content="Inflatable rentals serving the La Grange, Kentucky area. Choose an inflatable and send a booking request. Owner confirmation required."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://allaboutthatbounceky.net/share.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="All About That Bounce — inflatable rentals" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <script type="module" src="app.js"></script>
+  </head>
+  <body data-page="book">
+    <a class="skip button" href="#main">Skip to content</a>
+    <header>
+      <div class="wrap header-inner">
+        <a class="brand" href="index.html"
+          ><span class="logo" aria-hidden="true">b.</span
+          ><span>All About<br />That Bounce<small>Logo placeholder</small></span></a
+        ><button id="menu" aria-controls="navigation" aria-expanded="false">Menu</button>
+        <nav id="navigation" class="nav" aria-label="Main navigation" hidden>
+          <a href="index.html">Home</a><a href="about.html">About</a
+          ><a href="book.html" aria-current="page">Book</a><a href="contact.html">Contact</a>
+        </nav>
+      </div>
+    </header>
+    <main id="main">
+      <div class="page-head wrap">
+        <h1>Let’s plan some fun.</h1>
+        <p>
+          <strong>This is a booking request only.</strong> Your date is not booked until the owner
+          confirms it.
+        </p>
+      </div>
+      <div class="wrap">
+        <div class="demo">
+          Frontend demo: sample inventory, fictional delivery estimates, and requests saved only in
+          this browser. No request is sent to the business.
+        </div>
+        <section class="section">
+          <h2>Choose your inflatable.</h2>
+          <div class="grid" id="units" aria-live="polite"><p>Loading inflatables…</p></div>
+        </section>
+        <div id="booking" hidden>
+          <div class="booking-layout">
+            <form id="booking-form" class="panel" novalidate>
+              <h2>Choose your date.</h2>
+              <div
+                id="calendar"
+                class="calendar"
+                role="group"
+                aria-label="Choose an available rental date"
+                aria-describedby="date-error"
+              ></div>
+              <input type="hidden" name="date" id="date" />
+              <div id="date-error" class="error" role="status"></div>
+              <p class="muted">
+                Crossed-out dates are unavailable. A request does not hold a date.
+              </p>
+              <h2>Your party details.</h2>
+              <div class="form-grid">
+                <div>
+                  <label for="name">Your name</label
+                  ><input
+                    id="name"
+                    name="name"
+                    type="text"
+                    required
+                    autocomplete="name"
+                    maxlength="100"
+                    aria-describedby="name-error"
+                  />
+                  <div class="error" id="name-error"></div>
+                </div>
+                <div>
+                  <label for="phone">Phone</label
+                  ><input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    required
+                    autocomplete="tel"
+                    maxlength="30"
+                    aria-describedby="phone-error"
+                  />
+                  <div class="error" id="phone-error"></div>
+                </div>
+                <div>
+                  <label for="email">Email</label
+                  ><input
+                    id="email"
+                    name="email"
+                    type="email"
+                    required
+                    autocomplete="email"
+                    maxlength="200"
+                    aria-describedby="email-error"
+                  />
+                  <div class="error" id="email-error"></div>
+                </div>
+                <div>
+                  <label for="event_type">Event type</label
+                  ><select
+                    id="event_type"
+                    name="event_type"
+                    required
+                    aria-describedby="event_type-error"
+                  >
+                    <option value="">Choose an event</option>
+                    <option>Birthday party</option>
+                    <option>School or community event</option>
+                    <option>Family celebration</option>
+                    <option>Other</option>
+                  </select>
+                  <div class="error" id="event_type-error"></div>
+                </div>
+                <div class="wide">
+                  <label for="delivery_address">Event delivery address</label
+                  ><input
+                    id="delivery_address"
+                    name="delivery_address"
+                    type="text"
+                    required
+                    autocomplete="street-address"
+                    maxlength="500"
+                    placeholder="Street, city, state, ZIP"
+                    aria-describedby="delivery_address-error"
+                  />
+                  <div class="error" id="delivery_address-error"></div>
+                </div>
+              </div>
+              <div id="quote-status" class="status" aria-live="polite"></div>
+              <div id="outside" class="notice" hidden>
+                <strong>This address is outside our delivery area.</strong>Please
+                <a href="tel:5028517596">call 502-851-7596</a> or
+                <a href="mailto:allaboutthatbounce7596@gmail.com">email us</a> so the owner can
+                discuss your event personally.
+              </div>
+              <div id="deposit" class="notice" hidden>
+                A deposit may be required for this inflatable. The owner will confirm the amount and
+                arrangements. No payment is collected here.
+              </div>
+              <div class="notice">
+                <strong>Request only, not a reservation.</strong>The owner must confirm your date
+                and final total. Payment is cash or check.
+              </div>
+              <input
+                type="text"
+                name="website"
+                tabindex="-1"
+                autocomplete="off"
+                aria-hidden="true"
+                style="position: absolute; left: -10000px"
+              />
+              <div class="cf-turnstile" data-sitekey="REPLACE_WITH_TURNSTILE_SITE_KEY"></div>
+              <button type="submit" id="send-request" disabled>Send Booking Request</button>
+              <div id="booking-status" class="status" role="status"></div>
+            </form>
+            <aside class="panel summary" aria-live="polite">
+              <h2>Your estimate</h2>
+              <p id="chosen-name"></p>
+              <div class="total"><span>Inflatable</span><span id="unit-price"></span></div>
+              <div class="total">
+                <span>Delivery estimate</span><span id="delivery-price">Enter address</span>
+              </div>
+              <div class="total grand">
+                <span>Estimated total</span><span id="total-price"></span>
+              </div>
+              <p class="muted">
+                Final availability, delivery, and total are confirmed by the owner.
+              </p>
+            </aside>
+          </div>
+        </div>
+        <section id="confirmation" class="panel" tabindex="-1" hidden>
+          <h2>Demo request saved.</h2>
+          <p>
+            <strong>Your date is not booked.</strong> In the live site, the owner will review your
+            request and contact you to confirm availability and the final total.
+          </p>
+          <p>This demo saved the request in your browser only. Nothing was sent to the business.</p>
+          <p id="request-reference"></p>
+          <a class="button" href="book.html">Start another request</a>
+        </section>
+      </div>
+    </main>
+    <footer>
+      <div class="wrap">
+        <a href="tel:5028517596">502-851-7596</a
+        ><a href="mailto:allaboutthatbounce7596@gmail.com">allaboutthatbounce7596@gmail.com</a>
+      </div>
+    </footer>
+    <noscript
+      ><p class="wrap">
+        JavaScript is needed for booking and admin tools. Please call or email for help.
+      </p></noscript
+    >
+  </body>
+</html>

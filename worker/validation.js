@@ -1,12 +1,77 @@
-export const json=(data,status=200,headers={})=>new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json; charset=utf-8',...headers}});
-export const fail=(message,status=400)=>json({error:message},status);
-export function requireJson(req){return (req.headers.get('content-type')||'').toLowerCase().startsWith('application/json');}
-export async function body(req){try{return await req.json();}catch{return null;}}
-export const emailOk=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||''));
-export const dateOk=v=>/^\d{4}-\d{2}-\d{2}$/.test(String(v||''));
-export function nyToday(now=new Date()){return new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(now);}
-export function unitError(u){if(!u?.name?.trim()||!u?.description?.trim()||!u?.size?.trim()||!['dry','wet'].includes(u?.mode)||!Number.isFinite(u?.price)||u.price<0)return 'Complete all inflatable details with a valid price.';return null;}
-export function settingsError(s){for(const k of ['free_radius_miles','per_mile_rate','trip_multiplier'])if(!Number.isFinite(s?.[k])||s[k]<0)return 'Enter valid delivery settings.';if(!Number.isInteger(s.trip_multiplier)||s.trip_multiplier<1)return 'Enter valid delivery settings.';if(Math.round(s.per_mile_rate*100)!==s.per_mile_rate*100)return 'Enter valid delivery settings.';if(s.max_delivery_miles!==null&&(!Number.isFinite(s.max_delivery_miles)||s.max_delivery_miles<s.free_radius_miles))return 'Maximum distance must be blank or at least the free delivery radius.';return null;}
-export function bookingError(x){if(!dateOk(x?.date)||x.date<nyToday())return 'Choose an upcoming date.';for(const k of ['name','phone','email','event_type','delivery_address','idempotency_key'])if(!String(x?.[k]||'').trim())return 'Complete every required field.';if(x.name.trim().length<2||x.name.trim().length>100||!emailOk(x.email)||String(x.phone).replace(/\D/g,'').length<10||String(x.event_type).length>200||String(x.delivery_address).length<5||String(x.delivery_address).length>500)return 'Complete every required field.';return null;}
-export function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-export function centsToDollars(c){return Number((c/100).toFixed(2));}
+export const json = (data, status = 200, headers = {}) =>
+  new Response(JSON.stringify(data), {
+    status,
+    headers: { "content-type": "application/json; charset=utf-8", ...headers },
+  });
+export const fail = (message, status = 400) => json({ error: message }, status);
+export function requireJson(req) {
+  return (req.headers.get("content-type") || "").toLowerCase().startsWith("application/json");
+}
+export async function body(req) {
+  try {
+    return await req.json();
+  } catch {
+    return null;
+  }
+}
+export const emailOk = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || ""));
+export const dateOk = (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ""));
+export function nyToday(now = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+}
+export function unitError(u) {
+  if (
+    !u?.name?.trim() ||
+    !u?.description?.trim() ||
+    !u?.size?.trim() ||
+    !["dry", "wet"].includes(u?.mode) ||
+    !Number.isFinite(u?.price) ||
+    u.price < 0
+  )
+    return "Complete all inflatable details with a valid price.";
+  return null;
+}
+export function settingsError(s) {
+  for (const k of ["free_radius_miles", "per_mile_rate", "trip_multiplier"])
+    if (!Number.isFinite(s?.[k]) || s[k] < 0) return "Enter valid delivery settings.";
+  if (!Number.isInteger(s.trip_multiplier) || s.trip_multiplier < 1)
+    return "Enter valid delivery settings.";
+  if (Math.round(s.per_mile_rate * 100) !== s.per_mile_rate * 100)
+    return "Enter valid delivery settings.";
+  if (
+    s.max_delivery_miles !== null &&
+    (!Number.isFinite(s.max_delivery_miles) || s.max_delivery_miles < s.free_radius_miles)
+  )
+    return "Maximum distance must be blank or at least the free delivery radius.";
+  return null;
+}
+export function bookingError(x) {
+  if (!dateOk(x?.date) || x.date < nyToday()) return "Choose an upcoming date.";
+  for (const k of ["name", "phone", "email", "event_type", "delivery_address", "idempotency_key"])
+    if (!String(x?.[k] || "").trim()) return "Complete every required field.";
+  if (
+    x.name.trim().length < 2 ||
+    x.name.trim().length > 100 ||
+    !emailOk(x.email) ||
+    String(x.phone).replace(/\D/g, "").length < 10 ||
+    String(x.event_type).length > 200 ||
+    String(x.delivery_address).length < 5 ||
+    String(x.delivery_address).length > 500
+  )
+    return "Complete every required field.";
+  return null;
+}
+export function escapeHtml(v) {
+  return String(v ?? "").replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+  );
+}
+export function centsToDollars(c) {
+  return Number((c / 100).toFixed(2));
+}
