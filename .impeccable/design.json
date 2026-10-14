@@ -1,0 +1,471 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-14T17:01:21.054146+00:00",
+  "title": "Design System: All About That Bounce",
+  "extensions": {
+    "colorMeta": {
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "tonalRamp": [
+          "oklch(15% 0.0702 286.61)",
+          "oklch(27% 0.0702 286.61)",
+          "oklch(38% 0.0702 286.61)",
+          "oklch(50% 0.0702 286.61)",
+          "oklch(61% 0.0702 286.61)",
+          "oklch(73% 0.0702 286.61)",
+          "oklch(84% 0.0702 286.61)",
+          "oklch(95% 0.0702 286.61)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "tonalRamp": [
+          "oklch(15% 0.0107 95.16)",
+          "oklch(27% 0.0107 95.16)",
+          "oklch(38% 0.0107 95.16)",
+          "oklch(50% 0.0107 95.16)",
+          "oklch(61% 0.0107 95.16)",
+          "oklch(73% 0.0107 95.16)",
+          "oklch(84% 0.0107 95.16)",
+          "oklch(95% 0.0107 95.16)"
+        ]
+      },
+      "purple": {
+        "role": "primary",
+        "displayName": "Purple",
+        "tonalRamp": [
+          "oklch(15% 0.2012 287.29)",
+          "oklch(27% 0.2012 287.29)",
+          "oklch(38% 0.2012 287.29)",
+          "oklch(50% 0.2012 287.29)",
+          "oklch(61% 0.2012 287.29)",
+          "oklch(73% 0.2012 287.29)",
+          "oklch(84% 0.2012 287.29)",
+          "oklch(95% 0.2012 287.29)"
+        ]
+      },
+      "pink": {
+        "role": "tertiary",
+        "displayName": "Pink",
+        "tonalRamp": [
+          "oklch(15% 0.2020 4.54)",
+          "oklch(27% 0.2020 4.54)",
+          "oklch(38% 0.2020 4.54)",
+          "oklch(50% 0.2020 4.54)",
+          "oklch(61% 0.2020 4.54)",
+          "oklch(73% 0.2020 4.54)",
+          "oklch(84% 0.2020 4.54)",
+          "oklch(95% 0.2020 4.54)"
+        ]
+      },
+      "yellow": {
+        "role": "secondary",
+        "displayName": "Yellow",
+        "tonalRamp": [
+          "oklch(15% 0.1664 90.27)",
+          "oklch(27% 0.1664 90.27)",
+          "oklch(38% 0.1664 90.27)",
+          "oklch(50% 0.1664 90.27)",
+          "oklch(61% 0.1664 90.27)",
+          "oklch(73% 0.1664 90.27)",
+          "oklch(84% 0.1664 90.27)",
+          "oklch(95% 0.1664 90.27)"
+        ]
+      },
+      "aqua": {
+        "role": "tertiary",
+        "displayName": "Aqua",
+        "tonalRamp": [
+          "oklch(15% 0.1100 188.69)",
+          "oklch(27% 0.1100 188.69)",
+          "oklch(38% 0.1100 188.69)",
+          "oklch(50% 0.1100 188.69)",
+          "oklch(61% 0.1100 188.69)",
+          "oklch(73% 0.1100 188.69)",
+          "oklch(84% 0.1100 188.69)",
+          "oklch(95% 0.1100 188.69)"
+        ]
+      },
+      "soft": {
+        "role": "neutral",
+        "displayName": "Soft",
+        "tonalRamp": [
+          "oklch(15% 0.0272 297.32)",
+          "oklch(27% 0.0272 297.32)",
+          "oklch(38% 0.0272 297.32)",
+          "oklch(50% 0.0272 297.32)",
+          "oklch(61% 0.0272 297.32)",
+          "oklch(73% 0.0272 297.32)",
+          "oklch(84% 0.0272 297.32)",
+          "oklch(95% 0.0272 297.32)"
+        ]
+      },
+      "white": {
+        "role": "neutral",
+        "displayName": "White",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.88)",
+          "oklch(27% 0.0000 89.88)",
+          "oklch(38% 0.0000 89.88)",
+          "oklch(50% 0.0000 89.88)",
+          "oklch(61% 0.0000 89.88)",
+          "oklch(73% 0.0000 89.88)",
+          "oklch(84% 0.0000 89.88)",
+          "oklch(95% 0.0000 89.88)"
+        ]
+      },
+      "purple-hover": {
+        "role": "primary",
+        "displayName": "Purple Hover",
+        "tonalRamp": [
+          "oklch(15% 0.1652 286.68)",
+          "oklch(27% 0.1652 286.68)",
+          "oklch(38% 0.1652 286.68)",
+          "oklch(50% 0.1652 286.68)",
+          "oklch(61% 0.1652 286.68)",
+          "oklch(73% 0.1652 286.68)",
+          "oklch(84% 0.1652 286.68)",
+          "oklch(95% 0.1652 286.68)"
+        ]
+      },
+      "danger": {
+        "role": "neutral",
+        "displayName": "Danger",
+        "tonalRamp": [
+          "oklch(15% 0.1746 12.40)",
+          "oklch(27% 0.1746 12.40)",
+          "oklch(38% 0.1746 12.40)",
+          "oklch(50% 0.1746 12.40)",
+          "oklch(61% 0.1746 12.40)",
+          "oklch(73% 0.1746 12.40)",
+          "oklch(84% 0.1746 12.40)",
+          "oklch(95% 0.1746 12.40)"
+        ]
+      },
+      "disabled-bg": {
+        "role": "neutral",
+        "displayName": "Disabled Bg",
+        "tonalRamp": [
+          "oklch(15% 0.0167 301.20)",
+          "oklch(27% 0.0167 301.20)",
+          "oklch(38% 0.0167 301.20)",
+          "oklch(50% 0.0167 301.20)",
+          "oklch(61% 0.0167 301.20)",
+          "oklch(73% 0.0167 301.20)",
+          "oklch(84% 0.0167 301.20)",
+          "oklch(95% 0.0167 301.20)"
+        ]
+      },
+      "disabled-text": {
+        "role": "neutral",
+        "displayName": "Disabled Text",
+        "tonalRamp": [
+          "oklch(15% 0.0322 296.64)",
+          "oklch(27% 0.0322 296.64)",
+          "oklch(38% 0.0322 296.64)",
+          "oklch(50% 0.0322 296.64)",
+          "oklch(61% 0.0322 296.64)",
+          "oklch(73% 0.0322 296.64)",
+          "oklch(84% 0.0322 296.64)",
+          "oklch(95% 0.0322 296.64)"
+        ]
+      },
+      "header-border": {
+        "role": "neutral",
+        "displayName": "Header Border",
+        "tonalRamp": [
+          "oklch(15% 0.0211 304.02)",
+          "oklch(27% 0.0211 304.02)",
+          "oklch(38% 0.0211 304.02)",
+          "oklch(50% 0.0211 304.02)",
+          "oklch(61% 0.0211 304.02)",
+          "oklch(73% 0.0211 304.02)",
+          "oklch(84% 0.0211 304.02)",
+          "oklch(95% 0.0211 304.02)"
+        ]
+      },
+      "image-bg": {
+        "role": "neutral",
+        "displayName": "Image Bg",
+        "tonalRamp": [
+          "oklch(15% 0.0180 188.40)",
+          "oklch(27% 0.0180 188.40)",
+          "oklch(38% 0.0180 188.40)",
+          "oklch(50% 0.0180 188.40)",
+          "oklch(61% 0.0180 188.40)",
+          "oklch(73% 0.0180 188.40)",
+          "oklch(84% 0.0180 188.40)",
+          "oklch(95% 0.0180 188.40)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted",
+        "tonalRamp": [
+          "oklch(15% 0.0527 295.61)",
+          "oklch(27% 0.0527 295.61)",
+          "oklch(38% 0.0527 295.61)",
+          "oklch(50% 0.0527 295.61)",
+          "oklch(61% 0.0527 295.61)",
+          "oklch(73% 0.0527 295.61)",
+          "oklch(84% 0.0527 295.61)",
+          "oklch(95% 0.0527 295.61)"
+        ]
+      },
+      "review-border": {
+        "role": "neutral",
+        "displayName": "Review Border",
+        "tonalRamp": [
+          "oklch(15% 0.0702 298.98)",
+          "oklch(27% 0.0702 298.98)",
+          "oklch(38% 0.0702 298.98)",
+          "oklch(50% 0.0702 298.98)",
+          "oklch(61% 0.0702 298.98)",
+          "oklch(73% 0.0702 298.98)",
+          "oklch(84% 0.0702 298.98)",
+          "oklch(95% 0.0702 298.98)"
+        ]
+      },
+      "demo-bg": {
+        "role": "neutral",
+        "displayName": "Demo Bg",
+        "tonalRamp": [
+          "oklch(15% 0.0636 93.72)",
+          "oklch(27% 0.0636 93.72)",
+          "oklch(38% 0.0636 93.72)",
+          "oklch(50% 0.0636 93.72)",
+          "oklch(61% 0.0636 93.72)",
+          "oklch(73% 0.0636 93.72)",
+          "oklch(84% 0.0636 93.72)",
+          "oklch(95% 0.0636 93.72)"
+        ]
+      },
+      "field-border": {
+        "role": "neutral",
+        "displayName": "Field Border",
+        "tonalRamp": [
+          "oklch(15% 0.0445 300.85)",
+          "oklch(27% 0.0445 300.85)",
+          "oklch(38% 0.0445 300.85)",
+          "oklch(50% 0.0445 300.85)",
+          "oklch(61% 0.0445 300.85)",
+          "oklch(73% 0.0445 300.85)",
+          "oklch(84% 0.0445 300.85)",
+          "oklch(95% 0.0445 300.85)"
+        ]
+      },
+      "divider": {
+        "role": "neutral",
+        "displayName": "Divider",
+        "tonalRamp": [
+          "oklch(15% 0.0336 300.88)",
+          "oklch(27% 0.0336 300.88)",
+          "oklch(38% 0.0336 300.88)",
+          "oklch(50% 0.0336 300.88)",
+          "oklch(61% 0.0336 300.88)",
+          "oklch(73% 0.0336 300.88)",
+          "oklch(84% 0.0336 300.88)",
+          "oklch(95% 0.0336 300.88)"
+        ]
+      },
+      "calendar-disabled-bg": {
+        "role": "neutral",
+        "displayName": "Calendar Disabled Bg",
+        "tonalRamp": [
+          "oklch(15% 0.0057 308.39)",
+          "oklch(27% 0.0057 308.39)",
+          "oklch(38% 0.0057 308.39)",
+          "oklch(50% 0.0057 308.39)",
+          "oklch(61% 0.0057 308.39)",
+          "oklch(73% 0.0057 308.39)",
+          "oklch(84% 0.0057 308.39)",
+          "oklch(95% 0.0057 308.39)"
+        ]
+      },
+      "calendar-disabled-text": {
+        "role": "neutral",
+        "displayName": "Calendar Disabled Text",
+        "tonalRamp": [
+          "oklch(15% 0.0279 306.64)",
+          "oklch(27% 0.0279 306.64)",
+          "oklch(38% 0.0279 306.64)",
+          "oklch(50% 0.0279 306.64)",
+          "oklch(61% 0.0279 306.64)",
+          "oklch(73% 0.0279 306.64)",
+          "oklch(84% 0.0279 306.64)",
+          "oklch(95% 0.0279 306.64)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Homepage hero."
+      },
+      "page-headline": {
+        "displayName": "Page headline",
+        "purpose": "Request and owner tools."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Readable copy and inherited controls."
+      }
+    },
+    "shadows": [
+      {
+        "name": "card",
+        "value": "0 8px 24px #2520470c",
+        "purpose": "White inventory card separation."
+      },
+      {
+        "name": "panel",
+        "value": "0 8px 24px #2520470a",
+        "purpose": "Lighter form and owner tool separation."
+      }
+    ],
+    "motion": [
+      {
+        "name": "hero-arrival",
+        "value": "arrive .65s ease-out",
+        "purpose": "translateY(12px) to translateY(0), only when reduced motion is not requested."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "mobile-max",
+        "value": "699px"
+      },
+      {
+        "name": "desktop-min",
+        "value": "700px"
+      }
+    ],
+    "review": {
+      "disposition": "Ship scoped frontend demo after source review, visual review and two spacing fixes.",
+      "sources": [
+        "public/styles.css",
+        "public/index.html",
+        "public/book.html",
+        "public/admin.html"
+      ],
+      "visualConfirmation": true,
+      "limitations": [
+        "Palette and logo are provisional; imagery, inventory and reviews include placeholders.",
+        "Tonal ramps are synthesized OKLCH preview metadata, not shipped CSS tokens.",
+        "Typography may vary across operating systems.",
+        "Verification covers reviewed demo surfaces; it is not production readiness or exhaustive device and state coverage."
+      ],
+      "verification": [
+        "Five public routes at 360px: no horizontal overflow or page errors.",
+        "Mobile route screenshots and desktop Home inspected.",
+        "Mobile general two-column gap adjusted to 36px; contact-form field groups adjusted to 16px vertical margins."
+      ]
+    }
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Actual primary action variant; no synthesized transition or active state.",
+      "html": "<button class=\"ds-button-primary\">Send request</button>",
+      "css": ".ds-button-primary{min-height:48px;padding:12px 22px;border:0;border-radius:30px;font:700 17px/1.6 var(--font,ui-rounded,'Trebuchet MS',Arial,sans-serif);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;background:var(--purple,#5632bc);color:var(--white,white);}.ds-button-primary:hover{background:var(--purple-hover,#3d218d)}.ds-button-primary:focus-visible{outline:3px solid var(--pink,#c51d60);outline-offset:4px}.ds-button-primary:disabled{background:var(--disabled-bg,#e2deea);color:var(--disabled-text,#615c70);cursor:not-allowed}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Actual secondary action variant; no synthesized transition or active state.",
+      "html": "<button class=\"ds-button-secondary\">Secondary action</button>",
+      "css": ".ds-button-secondary{min-height:48px;padding:12px 22px;border:0;border-radius:30px;font:700 17px/1.6 var(--font,ui-rounded,'Trebuchet MS',Arial,sans-serif);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;background:var(--yellow,#ffcf32);color:var(--ink,#252047);}.ds-button-secondary:focus-visible{outline:3px solid var(--pink,#c51d60);outline-offset:4px}.ds-button-secondary:disabled{background:var(--disabled-bg,#e2deea);color:var(--disabled-text,#615c70);cursor:not-allowed}"
+    },
+    {
+      "name": "Quiet Button",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "Actual quiet action variant; no synthesized transition or active state.",
+      "html": "<button class=\"ds-button-quiet\">Quiet action</button>",
+      "css": ".ds-button-quiet{min-height:48px;padding:12px 22px;border:0;border-radius:30px;font:700 17px/1.6 var(--font,ui-rounded,'Trebuchet MS',Arial,sans-serif);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;background:var(--soft,#f0ebff);color:var(--ink,#252047);}.ds-button-quiet:focus-visible{outline:3px solid var(--pink,#c51d60);outline-offset:4px}.ds-button-quiet:disabled{background:var(--disabled-bg,#e2deea);color:var(--disabled-text,#615c70);cursor:not-allowed}"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Actual danger action variant; no synthesized transition or active state.",
+      "html": "<button class=\"ds-button-danger\">Danger action</button>",
+      "css": ".ds-button-danger{min-height:48px;padding:12px 22px;border:0;border-radius:30px;font:700 17px/1.6 var(--font,ui-rounded,'Trebuchet MS',Arial,sans-serif);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;background:var(--danger,#a5163f);color:var(--white,white);}.ds-button-danger:focus-visible{outline:3px solid var(--pink,#c51d60);outline-offset:4px}.ds-button-danger:disabled{background:var(--disabled-bg,#e2deea);color:var(--disabled-text,#615c70);cursor:not-allowed}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Rounded labeled field with invalid and keyboard focus treatments.",
+      "html": "<label class=\"ds-label\" for=\"ds-name\">Your name</label><input class=\"ds-field\" id=\"ds-name\" placeholder=\"Enter your name\">",
+      "css": ".ds-label{display:block;font-weight:700;margin-bottom:7px}.ds-field{width:100%;min-height:48px;border:1px solid var(--field-border,#8b819e);border-radius:10px;padding:12px;background:var(--white,white);color:var(--ink,#252047);caret-color:var(--purple,#5632bc);font:17px/1.6 var(--font,ui-rounded,'Trebuchet MS',Arial,sans-serif)}.ds-field:focus-visible{outline:3px solid var(--pink,#c51d60);outline-offset:4px}.ds-field[aria-invalid=true]{border:2px solid var(--danger,#a5163f)}"
+    },
+    {
+      "name": "Navigation",
+      "kind": "nav",
+      "refersTo": "navigation",
+      "description": "Ink navigation with soft current-page pill.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Preview navigation\"><a href=\"#home\" aria-current=\"page\">Home</a><a href=\"#book\">Book</a></nav>",
+      "css": ".ds-nav{display:flex;gap:8px;align-items:center}.ds-nav a{padding:10px 15px;text-decoration:none;font-weight:700;color:var(--ink,#252047);border-radius:24px;font-family:var(--font,ui-rounded,'Trebuchet MS',Arial,sans-serif)}.ds-nav a[aria-current=page]{background:var(--soft,#f0ebff);color:var(--purple,#5632bc)}.ds-nav a:focus-visible{outline:3px solid var(--pink,#c51d60);outline-offset:4px}"
+    },
+    {
+      "name": "Tag",
+      "kind": "chip",
+      "refersTo": "tag",
+      "description": "Noninteractive descriptive inventory tag.",
+      "html": "<span class=\"ds-tag\">Dry</span>",
+      "css": ".ds-tag{font:700 .8rem/1.6 var(--font,ui-rounded,'Trebuchet MS',Arial,sans-serif);padding:5px 10px;background:var(--soft,#f0ebff);border-radius:16px;display:inline-block;color:var(--ink,#252047)}"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Inventory card surface with responsive body padding; image excluded from preview.",
+      "html": "<article class=\"ds-card\"><div class=\"ds-card-body\"><h3>Party starter</h3><p>Choose your kind of fun.</p></div></article>",
+      "css": ".ds-card{background:var(--white,white);border-radius:var(--radius,20px);overflow:hidden;box-shadow:0 8px 24px #2520470c;color:var(--ink,#252047);font:17px/1.6 var(--font,ui-rounded,'Trebuchet MS',Arial,sans-serif)}.ds-card-body{padding:24px}.ds-card h3{font-size:1.4rem;line-height:1.12;letter-spacing:-.025em;margin:8px 0 12px}.ds-card.ds-selected{outline:3px solid var(--purple,#5632bc);outline-offset:3px}@media(max-width:699px){.ds-card-body{padding:20px}}"
+    },
+    {
+      "name": "Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Readable request and owner tool container.",
+      "html": "<section class=\"ds-panel\"><h2>Your estimate</h2><p>Final details are confirmed by the owner.</p></section>",
+      "css": ".ds-panel{background:var(--white,white);border-radius:var(--radius,20px);padding:24px;margin:24px 0;box-shadow:0 8px 24px #2520470a;color:var(--ink,#252047);font:17px/1.6 var(--font,ui-rounded,'Trebuchet MS',Arial,sans-serif)}.ds-panel h2{font-size:clamp(1.8rem,4vw,2.7rem);line-height:1.12;letter-spacing:-.025em;margin:0 0 22px}@media(max-width:699px){.ds-panel{padding:20px}}"
+    },
+    {
+      "name": "Calendar Day",
+      "kind": "button",
+      "refersTo": "calendar-day",
+      "description": "Available, selected and unavailable date styles.",
+      "html": "<div class=\"ds-days\"><button>12</button><button aria-pressed=\"true\">13</button><button disabled>14</button></div>",
+      "css": ".ds-days{display:flex;gap:4px}.ds-days button{font:700 17px/1.6 var(--font,ui-rounded,'Trebuchet MS',Arial,sans-serif);padding:0;min-height:44px;border:0;border-radius:10px;background:var(--soft,#f0ebff);color:var(--ink,#252047);cursor:pointer}.ds-days button[aria-pressed=true]{background:var(--purple,#5632bc);color:white}.ds-days button:disabled{background:var(--calendar-disabled-bg,#efedf1);color:var(--calendar-disabled-text,#706879);text-decoration:line-through;cursor:not-allowed}.ds-days button:focus-visible{outline:3px solid var(--pink,#c51d60);outline-offset:4px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Party Invitation",
+    "overview": "The Party Invitation is the working metaphor for this playful, saturated, bubbly and clean system. Bold rounded-feeling system type, pill actions, warm paper, purple emphasis, yellow bands and aqua artwork framing carry the invitation into a readable request flow and simple owner tools.\n\nThis is a source-derived record of the scoped frontend demo, sampled from public/styles.css and public/index.html, public/book.html and public/admin.html. Purple, yellow and aqua remain provisional brand choices; the logo, artwork, inventory and reviews contain explicit placeholders. Source review was followed by scoped visual and functional demo verification: five public routes at 360px had no overflow or page errors, mobile route screenshots and desktop Home were inspected, and the demo was approved to ship after two spacing fixes. This evidence covers the reviewed demo surfaces, not production readiness or every device and state.",
+    "keyCharacteristics": [
+      "Saturated accents on warm paper and white surfaces.",
+      "Bold headings, pill actions and softly rounded forms.",
+      "Mobile-first stacked content with one desktop breakpoint.",
+      "Centralized CSS color variables and a local system font stack."
+    ],
+    "rules": [],
+    "dos": [
+      "Do reuse public/styles.css variables for shared colors, the font stack and the shared surface radius.",
+      "Do preserve the 360px phone target, stacked mobile flow, wrapping actions and visible keyboard focus.",
+      "Do keep marketing playful while forms and owner tools remain readable.",
+      "Do label provisional imagery, demo data and request-only behavior honestly."
+    ],
+    "donts": [
+      "Don't add unnecessary third-party fonts or scripts.",
+      "Don't extend scoped demo verification into claims of production readiness or exhaustive device coverage.",
+      "Don't treat the provisional palette or placeholder logo as approved final identity."
+    ]
+  }
+}

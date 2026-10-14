@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Admin | All About That Bounce</title>
+    <meta
+      name="description"
+      content="Inflatable rentals serving the La Grange, Kentucky area. Choose an inflatable and send a booking request. Owner confirmation required."
+    />
+    <meta name="theme-color" content="#5632bc" />
+    <meta property="og:title" content="Admin | All About That Bounce" />
+    <meta
+      property="og:description"
+      content="Inflatable rentals serving the La Grange, Kentucky area. Choose an inflatable and send a booking request. Owner confirmation required."
+    />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:image"
+      content="https://allaboutthatbounceky.net/share.png"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="All About That Bounce — inflatable rentals"
+    />
+    <meta name="robots" content="noindex,nofollow" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="admin.js"></script>
+  </head>
+  <body data-page="admin">
+    <a class="skip button" href="#main">Skip to content</a>
+    <header>
+      <div class="wrap header-inner">
+        <a class="brand" href="index.html"
+          ><span class="logo" aria-hidden="true">b.</span
+          ><span
+            >All About<br />That Bounce<small>Logo placeholder</small></span
+          ></a
+        ><button id="menu" aria-controls="navigation" aria-expanded="false">
+          Menu
+        </button>
+        <nav id="navigation" class="nav" aria-label="Main navigation" hidden>
+          <a href="index.html">Home</a><a href="about.html">About</a
+          ><a href="book.html">Book</a><a href="contact.html">Contact</a>
+        </nav>
+      </div>
+    </header>
+    <main id="main">
+      <div class="page-head wrap">
+        <h1>Your bounce dashboard.</h1>
+        <p>Manage requests, inflatables, and delivery in one place.</p>
+        <div class="demo">
+          Demo only · browser-local data · protect this page and all future
+          admin endpoints with Cloudflare Access before launch.
+        </div>
+        <div class="actions">
+          <a href="#requests">Requests</a><a href="#inventory">Inflatables</a
+          ><a href="#settings">Delivery</a><a href="#dates">Calendar</a>
+        </div>
+        <div id="admin-status" role="status" class="status"></div>
+      </div>
+      <div class="wrap">
+        <section id="requests" class="panel">
+          <h2>Pending requests</h2>
+          <div id="pending"></div>
+          <details>
+            <summary>Past decisions</summary>
+            <div id="history"></div>
+          </details>
+        </section>
+        <section id="inventory" class="panel">
+          <h2>Your inflatables</h2>
+          <div id="unit-list"></div>
+          <button id="add-unit">Add inflatable</button>
+          <form id="unit-form" novalidate hidden>
+            <h3 id="unit-heading">Add inflatable</h3>
+            <input type="hidden" name="id" />
+            <div class="form-grid">
+              <div>
+                <label for="unit-name">Name</label
+                ><input
+                  id="unit-name"
+                  name="name"
+                  required
+                  maxlength="100"
+                  aria-describedby="unit-name-error"
+                />
+                <div id="unit-name-error" class="error"></div>
+              </div>
+              <div>
+                <label for="unit-size">Size or capacity</label
+                ><input
+                  id="unit-size"
+                  name="size"
+                  required
+                  maxlength="200"
+                  aria-describedby="unit-size-error"
+                />
+                <div id="unit-size-error" class="error"></div>
+              </div>
+              <div class="wide">
+                <label for="unit-description">Description</label
+                ><textarea
+                  id="unit-description"
+                  name="description"
+                  required
+                  maxlength="1000"
+                  aria-describedby="unit-description-error"
+                ></textarea>
+                <div id="unit-description-error" class="error"></div>
+              </div>
+              <div>
+                <label for="unit-mode">Dry or wet</label
+                ><select id="unit-mode" name="mode">
+                  <option value="dry">Dry</option>
+                  <option value="wet">Wet</option>
+                </select>
+              </div>
+              <div>
+                <label for="unit-price-input">Price ($)</label
+                ><input
+                  id="unit-price-input"
+                  name="price"
+                  type="number"
+                  min="0"
+                  max="10000"
+                  step="0.01"
+                  required
+                  aria-describedby="unit-price-input-error"
+                />
+                <div id="unit-price-input-error" class="error"></div>
+              </div>
+              <div class="wide">
+                <label for="unit-photos"
+                  >Photos (JPEG, PNG, WebP; up to 3, 500 KB each)</label
+                ><input
+                  id="unit-photos"
+                  name="photos"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  aria-describedby="photo-help"
+                />
+                <p id="photo-help" class="muted">
+                  Demo photos stay in browser storage. Leaving this blank keeps
+                  existing photos.
+                </p>
+                <label
+                  ><input type="checkbox" id="remove-photos" />Replace photos
+                  with placeholder</label
+                >
+              </div>
+              <div class="wide">
+                <label
+                  ><input type="checkbox" name="deposit_required" />Deposit
+                  required for this inflatable</label
+                >
+                <p class="muted">
+                  Off by default. Shows a notice only; online deposits are not
+                  enabled.
+                </p>
+              </div>
+            </div>
+            <div class="actions">
+              <button type="submit">Save inflatable</button
+              ><button type="button" id="cancel-unit" class="quiet">
+                Cancel
+              </button>
+            </div>
+            <div id="unit-status" class="status" role="status"></div>
+          </form>
+        </section>
+        <section id="settings" class="panel">
+          <h2>Delivery settings</h2>
+          <form id="settings-form" novalidate>
+            <div class="form-grid">
+              <div>
+                <label for="radius">Free radius (miles)</label
+                ><input
+                  id="radius"
+                  name="free_radius_miles"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  required
+                  aria-describedby="radius-error"
+                />
+                <div id="radius-error" class="error"></div>
+              </div>
+              <div>
+                <label for="rate">Rate per mile ($)</label
+                ><input
+                  id="rate"
+                  name="per_mile_rate"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  required
+                  aria-describedby="rate-error"
+                />
+                <div id="rate-error" class="error"></div>
+              </div>
+              <div>
+                <label for="trips">Trip multiplier</label
+                ><input
+                  id="trips"
+                  name="trip_multiplier"
+                  type="number"
+                  min="1"
+                  step="1"
+                  required
+                  aria-describedby="trips-error"
+                />
+                <div id="trips-error" class="error"></div>
+              </div>
+              <div>
+                <label for="maximum">Maximum distance (optional)</label
+                ><input
+                  id="maximum"
+                  name="max_delivery_miles"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  aria-describedby="maximum-error maximum-help"
+                />
+                <div id="maximum-error" class="error"></div>
+                <p id="maximum-help" class="muted">Blank means no maximum.</p>
+              </div>
+            </div>
+            <p>
+              Beyond the free radius, the fee uses the full delivery distance.
+            </p>
+            <button type="submit">Save delivery settings</button>
+            <div id="settings-status" class="status" role="status"></div>
+          </form>
+        </section>
+        <section id="dates" class="panel">
+          <h2>Block or unblock a date</h2>
+          <form id="dates-form" novalidate>
+            <div class="form-grid">
+              <div>
+                <label for="calendar-unit">Inflatable</label
+                ><select name="unit_id" id="calendar-unit" required></select>
+              </div>
+              <div>
+                <label for="block-date">Date</label
+                ><input
+                  id="block-date"
+                  name="date"
+                  type="date"
+                  required
+                  aria-describedby="block-date-error"
+                />
+                <div id="block-date-error" class="error"></div>
+              </div>
+            </div>
+            <div class="actions">
+              <button type="submit" name="action" value="block">
+                Block date</button
+              ><button
+                type="submit"
+                name="action"
+                value="unblock"
+                class="quiet"
+              >
+                Unblock date
+              </button>
+            </div>
+            <div id="dates-status" class="status" role="status"></div>
+          </form>
+          <h3>Unavailable dates</h3>
+          <div id="blocked-list"></div>
+          <p class="muted">
+            Confirmed rentals stay blocked and cannot be unblocked here.
+          </p>
+        </section>
+      </div>
+    </main>
+    <footer>
+      <div class="wrap">
+        <a href="tel:5028517596">502-851-7596</a
+        ><a href="mailto:allaboutthatbounce7596@gmail.com"
+          >allaboutthatbounce7596@gmail.com</a
+        >
+      </div>
+    </footer>
+    <noscript
+      ><p class="wrap">
+        JavaScript is needed for booking and admin tools. Please call or email
+        for help.
+      </p></noscript
+    >
+  </body>
+</html>
