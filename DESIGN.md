@@ -231,3 +231,9 @@ The seven-column calendar uses 4px gaps, soft day buttons, purple selected dates
 ## Current Application Context
 
 The frontend now calls the Cloudflare Worker API through `public/api.js`; requests and inventory persist in D1, and unit photos use R2. The owner dashboard is protected by Cloudflare Access. Historical visual checks above describe the original demo and do not verify current production interactions. See `TEST-RESULTS.md` for current automated and live checks. Do not reintroduce localStorage/demo-success copy. Owner approval of the working logo and palette remains pending.
+
+## Booking Page
+
+`public/book.html` is one page with five numbered steps: choose an inflatable, pick a date, your details, delivery address and price, and a live review panel with the Send button. The review panel sits beside the form on desktop and below it on phones. Steps 2 to 5 appear after an inflatable is chosen. The page has distinct states for loading, an empty catalog (contact options, no form), a failed catalog load (retry plus contact options), a failed calendar load (retry), a delivery quote that is loading, free, priced, outside the area or failed, and a pending-request acknowledgement.
+
+Rules this page keeps: no motion or spinners in the form; no inline `style` attributes (the CSP uses `style-src 'self'`, which blocks them, including on the honeypot); the delivery quote is invalidated whenever the address changes and a request is never sent without a quote for the current address; the success panel says the request is pending and that the date is not held, and describes the receipt email as queued, never as delivered. Copy names Rena as the direct contact and avoids pronouns for her. Calendar days use arrow keys with a single tab stop. Browser-side rendering of the estimate is informational; the Worker recalculates price and delivery.

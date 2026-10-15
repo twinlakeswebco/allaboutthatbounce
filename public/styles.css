@@ -64,7 +64,8 @@ button.secondary,
   background: var(--yellow);
   color: var(--ink);
 }
-button.quiet {
+button.quiet,
+.button.quiet {
   background: var(--soft);
   color: var(--ink);
 }
@@ -295,6 +296,9 @@ p {
   background: var(--soft);
   border-radius: 14px;
   margin: 20px 0;
+}
+.notice {
+  overflow-wrap: anywhere;
 }
 .notice strong {
   display: block;
@@ -557,4 +561,229 @@ main {
 }
 #contact-form > div:not(.status) {
   margin: 16px 0;
+}
+
+/* Booking page */
+.lead {
+  font-size: 1.15rem;
+}
+.facts {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0 0;
+  display: grid;
+  gap: 8px;
+}
+.facts li {
+  background: var(--soft);
+  border-radius: 14px;
+  padding: 10px 14px;
+}
+.step-num {
+  display: inline-grid;
+  place-items: center;
+  width: 1.5em;
+  height: 1.5em;
+  margin-right: 0.4em;
+  border-radius: 50%;
+  background: var(--yellow);
+  color: var(--ink);
+  font-size: 0.75em;
+  font-weight: 900;
+  vertical-align: 0.12em;
+}
+#units > p {
+  grid-column: 1 / -1;
+}
+#units-retry {
+  margin-top: 0;
+}
+.pick {
+  display: flex;
+  flex-direction: column;
+}
+.pick .card-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.pick .card-body > p {
+  margin: 0 0 12px;
+}
+.photos {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  background: #e8f9f7;
+}
+.photos img {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+}
+.specs {
+  margin: 0 0 12px;
+}
+.specs div {
+  display: flex;
+  gap: 8px;
+}
+.specs dt {
+  font-weight: 700;
+}
+.specs dt::after {
+  content: ":";
+}
+.specs dd {
+  margin: 0;
+}
+.price .per {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: #544c6c;
+}
+.pick-btn {
+  width: 100%;
+  margin-top: auto;
+}
+.pick-btn[aria-pressed="true"],
+.pick-btn[aria-pressed="true"]:hover {
+  background: var(--ink);
+}
+.pick-btn[aria-pressed="true"]::before {
+  content: "✓";
+}
+.readout {
+  font-weight: 700;
+  margin: 0 0 14px;
+}
+.legend {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding: 0;
+  margin: 14px 0 6px;
+  font-size: 0.9rem;
+}
+.swatch {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  margin-right: 6px;
+  vertical-align: -3px;
+}
+.swatch.open {
+  background: var(--soft);
+  border: 1px solid #afa0d0;
+}
+.swatch.chosen {
+  background: var(--purple);
+}
+.swatch.taken {
+  background:
+    linear-gradient(to top right, transparent 44%, #706879 44%, #706879 56%, transparent 56%),
+    #efedf1;
+}
+.days button:focus-visible {
+  outline-offset: 0;
+}
+.days button.past:disabled {
+  background: transparent;
+  text-decoration: none;
+}
+.honeypot {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.status:empty {
+  padding: 0;
+}
+.status.ok,
+.status.warn,
+.status.error {
+  padding: 12px 14px;
+  border-radius: 10px;
+  margin: 12px 0;
+}
+.status.ok {
+  background: var(--soft);
+  border-left: 4px solid var(--purple);
+}
+.status.warn {
+  background: #fff1c1;
+  border-left: 4px solid var(--yellow);
+}
+.status.error {
+  background: #fdecf1;
+  border-left: 4px solid #a5163f;
+  color: #7d0f2e;
+}
+#check-delivery {
+  margin-top: 4px;
+}
+.summary-unit {
+  font-size: 1.25rem;
+  font-weight: 900;
+  margin: 0 0 8px;
+}
+.review-list {
+  margin: 0 0 12px;
+}
+.review-list div {
+  display: grid;
+  padding: 8px 0;
+  border-bottom: 1px solid #ddd5ed;
+}
+.review-list dt {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #544c6c;
+}
+.review-list dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.review-list dd.blank {
+  color: #544c6c;
+  font-style: italic;
+}
+.send {
+  width: 100%;
+  margin-top: 14px;
+  font-size: 1.1rem;
+}
+.cf-turnstile {
+  margin-top: 14px;
+}
+.empty-state,
+.confirmation {
+  border: 3px solid var(--purple);
+}
+.pending-tag {
+  background: var(--yellow);
+}
+.next-steps {
+  padding-left: 24px;
+  display: grid;
+  gap: 8px;
+}
+@media (min-width: 700px) {
+  .facts {
+    grid-template-columns: repeat(3, auto);
+    justify-content: start;
+  }
+  .booking-layout .panel:first-child {
+    margin-top: 0;
+  }
+  .booking-layout .summary {
+    margin-top: 0;
+  }
+  .confirmation .review-list div {
+    grid-template-columns: 160px 1fr;
+    gap: 12px;
+  }
 }

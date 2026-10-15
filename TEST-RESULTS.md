@@ -59,3 +59,9 @@ The initial backend report recorded 84 Worker tests and an open PR #1. Those are
 - PR #19 upgrades the test pool to 0.12.21 while retaining `fetchMock`. All 94 Worker and 13 frontend/email tests passed on that branch. Runtime support improves to 2026-03-10 but still falls back from production’s date; the current major plugin removes `fetchMock`. Dependency advisories remain.
 
 None of these PRs has been merged or deployed as part of this report. Catalog entry and a full booking/email test are deferred. Merged branch cleanup verified every old tip as an ancestor of main before removing 23 local and 15 remote branches; linked worktree files were retained.
+
+## Booking page rebuild (branch `claude/aatb-booking-page-2jn5x7`)
+
+- `npm run format:check` clean. `npm test`: 94 Worker tests and 31 frontend/email tests passed (16 new booking-page tests in `frontend-tests/booking.test.mjs`: empty and failed catalogs, selection, blocked dates, calendar failure and retry, quote invalidation and stale-quote blocking, quote de-duplication, outside area, provider failure, validation, missing Turnstile token, payload contents including honeypot and idempotency key, key reuse only for identical retries, pending acknowledgement, date-taken conflict, `?unit` links, no inline styles).
+- Page inspected in Chromium at 360px and 1280px against the production Content-Security-Policy with mocked API responses and a stand-in Turnstile widget: no horizontal overflow, console errors or CSP violations in any state. Also loaded against a local `wrangler dev` Worker with local D1 and the local-only review seed (26 listings, unapproved data, never remote) to confirm real API shapes.
+- Not verified: a real Turnstile token, a real Google quote, a real submission, or real email delivery. No production booking was created and no remote D1 command was run.

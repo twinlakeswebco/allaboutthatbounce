@@ -22,24 +22,32 @@ export function setupMenu() {
     }
   });
 }
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export function fieldMessage(el) {
+  const value = el.value.trim();
+  if (el.required && value === "") return "Please complete this field.";
+  if (el.type === "tel" && value && value.replace(/\D/g, "").length < 10)
+    return "Enter a phone number with at least 10 digits.";
+  if (el.type === "email" && value && (el.validity.typeMismatch || !emailPattern.test(value)))
+    return "Enter a valid email address, like name@example.com.";
+  if (el.minLength > 0 && value && value.length < el.minLength)
+    return `Enter at least ${el.minLength} characters.`;
+  if (!el.validity.valid && !el.validity.valueMissing && !el.validity.typeMismatch)
+    return "Enter a valid value within the allowed range.";
+  return "";
+}
+export function checkField(el) {
+  const message = fieldMessage(el);
+  const err = $(el.id + "-error");
+  if (err) err.textContent = message;
+  el.setAttribute("aria-invalid", String(!!message));
+  return message;
+}
 export function validate(form) {
   let first;
   for (const el of form.querySelectorAll("input:not([type=hidden]),select,textarea")) {
-    if (el.disabled) continue;
-    let message = el.validity.valueMissing
-      ? "Please complete this field."
-      : el.validity.typeMismatch
-        ? "Enter a valid email address."
-        : !el.validity.valid
-          ? "Enter a valid value within the allowed range."
-          : "";
-    if (el.required && el.value.trim() === "") message = "Please complete this field.";
-    if (el.type === "tel" && el.value.replace(/\D/g, "").length < 10)
-      message = "Enter a phone number with at least 10 digits.";
-    const err = $(el.id + "-error");
-    if (err) err.textContent = message;
-    el.setAttribute("aria-invalid", String(!!message));
-    if (message && !first) first = el;
+    if (el.disabled || !el.id) continue;
+    if (checkField(el) && !first) first = el;
   }
   if (first) first.focus();
   return !first;
@@ -93,6 +101,81 @@ export function unitCard(u, choose) {
   c.append(b);
   return c;
 }
+const unavailableMessage =
+  "This service is unavailable right now. Please call 502-851-7596 for help.";
+const firstOfMonth = (d) => new Date(d.getFullYear(), d.getMonth(), 1);
+function longDate(iso) {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+function unitImage(src, name, index, total) {
+  const img = document.createElement("img");
+  const safe = safePhoto(src);
+  const soon = `Photo of ${name} coming soon`;
+  img.src = safe;
+  img.alt =
+    safe === "placeholder.svg"
+      ? soon
+      : total > 1
+        ? `${name}, photo ${index + 1} of ${total}`
+        : `${name} inflatable`;
+  img.width = 800;
+  img.height = 600;
+  img.loading = "lazy";
+  img.addEventListener(
+    "error",
+    () => {
+      img.src = "placeholder.svg";
+      img.alt = soon;
+    },
+    { once: true },
+  );
+  return img;
+}
+export function bookingCard(u, choose) {
+  const c = text("article", "", "card pick");
+  const photos = Array.isArray(u.photos) && u.photos.length ? u.photos : [null];
+  const strip = text("div", "", "photos");
+  photos.forEach((p, i) => strip.append(unitImage(p, u.name, i, photos.length)));
+  if (photos.length > 1) {
+    strip.tabIndex = 0;
+    strip.setAttribute("role", "group");
+    strip.setAttribute("aria-label", `${photos.length} photos of ${u.name}`);
+  }
+  c.append(strip);
+  const b = text("div", "", "card-body");
+  const price = text("p", money(u.price), "price");
+  price.append(text("span", " for your event day", "per"));
+  const specs = text("dl", "", "specs");
+  for (const [k, v] of [
+    ["Specs", u.size],
+    ["Use", u.mode === "wet" ? "Wet (used with water)" : "Dry (no water)"],
+  ]) {
+    const row = text("div", "");
+    row.append(text("dt", k), text("dd", v));
+    specs.append(row);
+  }
+  b.append(
+    text("span", u.mode === "wet" ? "Wet" : "Dry", "tag"),
+    text("h3", u.name),
+    text("p", u.description),
+    specs,
+  );
+  if (photos.length > 1) b.append(text("p", "Scroll sideways on the photo to see more.", "muted"));
+  b.append(price);
+  const btn = text("button", "Choose " + u.name, "pick-btn");
+  btn.type = "button";
+  btn.setAttribute("aria-pressed", "false");
+  btn.addEventListener("click", () => choose(u, c));
+  b.append(btn);
+  c.append(b);
+  return c;
+}
 setupMenu();
 const page = document.body.dataset.page;
 async function init() {
@@ -131,214 +214,483 @@ async function init() {
   }
   if (page === "book") await booking();
 }
+function row(label, value) {
+  const r = text("div", "");
+  r.append(text("dt", label), text("dd", value));
+  return r;
+}
+const validQuote = (q) =>
+  ["free", "fee", "outside_area"].includes(q?.status) &&
+  Number.isFinite(q.fee) &&
+  Number.isFinite(q.distance_miles);
 async function booking() {
-  const units = await api.listUnits();
-  let unit,
-    blocked = [],
-    month = new Date();
-  month.setDate(1);
-  let quote = null,
-    quotedAddress = "",
-    version = 0,
-    busy = false,
-    loading = false,
-    idempotency = crypto.randomUUID();
   const form = $("booking-form"),
     submit = $("send-request"),
-    address = $("delivery_address");
-  function totals() {
+    address = $("delivery_address"),
+    checkBtn = $("check-delivery");
+  let unit = null,
+    blocked = [],
+    datesState = "idle",
+    datesError = "",
+    month = firstOfMonth(new Date()),
+    selectionVersion = 0;
+  let quote = null,
+    quotedAddress = "",
+    quoteError = "",
+    quoteHint = "",
+    quoting = null,
+    quotingAddress = "",
+    quoteVersion = 0,
+    freeMiles = null;
+  let busy = false,
+    idempotency = crypto.randomUUID(),
+    lastSignature = "";
+
+  function setStatus(message, kind = "") {
+    const s = $("booking-status");
+    s.textContent = message;
+    s.className = "status" + (kind ? " " + kind : "");
+  }
+  function renderQuote() {
+    const status = $("quote-status");
+    status.className = "status";
+    const checking = quoting !== null;
+    $("outside").hidden = quote?.status !== "outside_area";
+    checkBtn.disabled = checking;
+    checkBtn.textContent = checking ? "Checking…" : quote ? "Check again" : "Check delivery price";
+    status.setAttribute("aria-busy", String(checking));
+    let delivery = "Add address",
+      total = "—",
+      note = "Add your delivery address and check the price to see your estimated total.";
+    if (checking) {
+      status.textContent = "Checking delivery to that address…";
+      delivery = "Checking…";
+      note = "Checking your delivery price…";
+    } else if (quoteError) {
+      status.textContent = quoteError;
+      status.classList.add("error");
+      delivery = "Not checked";
+      note = "Check your delivery price to see your estimated total.";
+    } else if (quote?.status === "outside_area") {
+      status.textContent = "";
+      delivery = "Outside our area";
+      note = "We can’t price delivery to this address online. Please call or email Rena.";
+    } else if (quote) {
+      const miles = `About ${quote.distance_miles} driving miles away`;
+      status.textContent =
+        quote.status === "free"
+          ? `${miles}, so delivery is free. Rena confirms the final details.`
+          : `${miles}, past our ${freeMiles ? freeMiles + "-mile " : ""}free delivery zone, so delivery is ${money(quote.fee)}. Rena confirms the final details.`;
+      status.classList.add("ok");
+      delivery = quote.status === "free" ? "Free" : money(quote.fee);
+      total = unit ? money(unit.price + quote.fee) : "—";
+      note = "Estimated total is the rental price plus delivery. Rena confirms the final total.";
+    } else {
+      status.textContent = quoteHint;
+      if (quoteHint) status.classList.add("warn");
+    }
+    $("delivery-price").textContent = delivery;
+    $("total-price").textContent = total;
+    $("total-note").textContent = note;
+  }
+  function renderSummary() {
     if (!unit) return;
+    const val = (id) => form.elements.namedItem(id).value.trim();
     $("chosen-name").textContent = unit.name;
     $("unit-price").textContent = money(unit.price);
-    $("delivery-price").textContent = quote
-      ? quote.status === "outside_area"
-        ? "Outside delivery area"
-        : money(quote.fee)
-      : "Enter address";
-    $("total-price").textContent =
-      quote?.status === "outside_area" ? "Unavailable" : money(unit.price + (quote?.fee || 0));
-    submit.disabled =
-      busy ||
-      loading ||
-      !quote ||
-      quote.status === "outside_area" ||
-      address.value.trim() !== quotedAddress;
+    const set = (id, v, empty) => {
+      const e = $(id);
+      e.textContent = v || empty;
+      e.classList.toggle("blank", !v);
+    };
+    set("sum-date", $("date").value && longDate($("date").value), "Choose a date");
+    set("sum-name", val("name"), "Not added yet");
+    set("sum-phone", val("phone"), "Not added yet");
+    set("sum-email", val("email"), "Not added yet");
+    set("sum-event", val("event_type"), "Not chosen yet");
+    set("sum-address", val("delivery_address"), "Not added yet");
+    renderQuote();
+    submit.disabled = busy || datesState === "loading";
+  }
+  function setDate(iso) {
+    $("date").value = iso;
+    $("date-error").textContent = "";
+    $("date-readout").textContent = iso ? "Your date: " + longDate(iso) : "No date chosen yet.";
+    renderSummary();
+  }
+  function focusCalendar() {
+    const t = $("calendar").querySelector('.days button[tabindex="0"]');
+    (t || $("calendar").querySelector("button"))?.focus();
   }
   function drawCalendar() {
     const root = $("calendar");
     root.replaceChildren();
+    root.setAttribute("aria-busy", String(datesState === "loading"));
+    if (datesState === "loading") {
+      root.append(text("p", "Loading available dates…", "status"));
+      return;
+    }
+    if (datesState === "error") {
+      root.append(text("p", datesError, "status error"));
+      const retry = text("button", "Try again");
+      retry.type = "button";
+      retry.addEventListener("click", () => loadDates());
+      root.append(retry);
+      return;
+    }
     const head = text("div", "", "calendar-head");
     const prev = text("button", "Previous");
     prev.type = "button";
+    prev.dataset.nav = "prev";
     prev.setAttribute("aria-label", "Previous month");
     const next = text("button", "Next");
     next.type = "button";
+    next.dataset.nav = "next";
     next.setAttribute("aria-label", "Next month");
     const label = text(
       "strong",
       month.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
     );
+    label.setAttribute("aria-live", "polite");
     const today = new Date();
     prev.disabled =
       month.getFullYear() === today.getFullYear() && month.getMonth() === today.getMonth();
-    prev.onclick = () => {
-      month.setMonth(month.getMonth() - 1);
+    const go = (delta, nav) => () => {
+      month = new Date(month.getFullYear(), month.getMonth() + delta, 1);
       drawCalendar();
+      const target = root.querySelector(`[data-nav="${nav}"]:not(:disabled)`);
+      (target || root.querySelector("[data-nav]:not(:disabled)"))?.focus();
     };
-    next.onclick = () => {
-      month.setMonth(month.getMonth() + 1);
-      drawCalendar();
-    };
+    prev.onclick = go(-1, "prev");
+    next.onclick = go(1, "next");
     head.append(prev, label, next);
     root.append(head);
     const days = text("div", "", "days");
-    ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].forEach((d) => days.append(text("span", d)));
+    ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].forEach((d) => {
+      const s = text("span", d);
+      s.setAttribute("aria-hidden", "true");
+      days.append(s);
+    });
     for (let i = 0; i < month.getDay(); i++) days.append(text("span", ""));
     const count = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+    const todayIso = api.localDate();
+    const chosen = $("date").value;
+    let tabStop = null;
     for (let n = 1; n <= count; n++) {
       const d = new Date(month.getFullYear(), month.getMonth(), n),
         iso = api.localDate(d);
-      const btn = text("button", String(n));
+      const isPast = iso < todayIso,
+        isBlocked = blocked.includes(iso);
+      const btn = text("button", String(n), isBlocked ? "taken" : isPast ? "past" : "");
       btn.type = "button";
-      btn.disabled = iso < api.localDate() || blocked.includes(iso);
-      btn.setAttribute("aria-pressed", String($("date").value === iso));
+      btn.dataset.day = String(n);
+      btn.disabled = isPast || isBlocked;
+      btn.tabIndex = -1;
+      btn.setAttribute("aria-pressed", String(chosen === iso));
       btn.setAttribute(
         "aria-label",
         d.toLocaleDateString("en-US", { dateStyle: "full" }) +
-          (btn.disabled ? ", unavailable" : ""),
+          (isBlocked ? ", booked or unavailable" : isPast ? ", already passed" : ""),
       );
       btn.onclick = () => {
-        $("date").value = iso;
-        $("date-error").textContent = "";
+        setDate(iso);
         drawCalendar();
-        root.querySelector(`[aria-pressed="true"]`).focus();
+        focusCalendar();
       };
+      if (chosen === iso && !btn.disabled) tabStop = btn;
       days.append(btn);
     }
+    tabStop ||= days.querySelector("button:not(:disabled)");
+    if (tabStop) tabStop.tabIndex = 0;
+    days.addEventListener("keydown", (e) => {
+      const here = e.target.closest?.("button");
+      const step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 7, ArrowUp: -7 }[e.key];
+      if (!here || (step === undefined && e.key !== "Home" && e.key !== "End")) return;
+      e.preventDefault();
+      const open = [...days.querySelectorAll("button:not(:disabled)")];
+      let to;
+      if (e.key === "Home") to = open[0];
+      else if (e.key === "End") to = open[open.length - 1];
+      else {
+        const want = Number(here.dataset.day) + step;
+        to =
+          step > 0
+            ? open.find((b) => Number(b.dataset.day) >= want)
+            : [...open].reverse().find((b) => Number(b.dataset.day) <= want);
+      }
+      if (!to) return;
+      days.querySelectorAll("button").forEach((b) => (b.tabIndex = -1));
+      to.tabIndex = 0;
+      to.focus();
+    });
     root.append(days);
   }
-  let selectionVersion = 0;
+  async function loadDates() {
+    const ticket = selectionVersion;
+    datesState = "loading";
+    drawCalendar();
+    renderSummary();
+    try {
+      const dates = await api.getBlockedDates(unit.id);
+      if (ticket !== selectionVersion) return;
+      blocked = Array.isArray(dates) ? dates.filter((d) => typeof d === "string") : [];
+      month = firstOfMonth(new Date());
+      datesState = "ready";
+    } catch (e) {
+      if (ticket !== selectionVersion) return;
+      datesState = "error";
+      datesError = e.message;
+    }
+    drawCalendar();
+    renderSummary();
+  }
   async function choose(u, c) {
-    const ticket = ++selectionVersion;
+    ++selectionVersion;
+    const hadDate = !!$("date").value;
     unit = u;
+    blocked = [];
     $("date").value = "";
+    $("date-readout").textContent = hadDate
+      ? "You chose a different inflatable, so please pick your date again."
+      : "No date chosen yet.";
     $("date-error").textContent = "";
     $("booking").hidden = false;
     $("deposit").hidden = !u.deposit_required;
-    document
-      .querySelectorAll("#units .card")
-      .forEach((card) => card.classList.toggle("selected", card === c));
-    $("calendar").textContent = "Loading available dates…";
-    loading = true;
-    totals();
-    try {
-      const dates = await api.getBlockedDates(u.id);
-      if (ticket !== selectionVersion) return;
-      blocked = dates;
-      month = new Date();
-      month.setDate(1);
-      drawCalendar();
-      $("booking").scrollIntoView({ behavior: "auto", block: "start" });
-    } catch (e) {
-      $("calendar").textContent = e.message;
-    } finally {
-      if (ticket === selectionVersion) {
-        loading = false;
-        totals();
+    document.querySelectorAll("#units .card").forEach((card) => {
+      const on = card === c;
+      const btn = card.querySelector(".pick-btn");
+      card.classList.toggle("selected", on);
+      if (btn) {
+        btn.setAttribute("aria-pressed", String(on));
+        btn.textContent = on
+          ? "Selected: " + card.querySelector("h3").textContent
+          : "Choose " + card.querySelector("h3").textContent;
       }
-    }
+    });
+    setStatus("");
+    $("booking").scrollIntoView({ behavior: "auto", block: "start" });
+    $("date-title").focus({ preventScroll: true });
+    await loadDates();
   }
-  $("units").replaceChildren();
-  for (const u of units) $("units").append(unitCard(u, choose));
-  if (!units.length)
-    $("units").textContent =
-      "No inflatables are listed yet. Call 502-851-7596 to talk through your event.";
-  const chosen = new URLSearchParams(location.search).get("unit");
-  if (chosen) {
-    const i = units.findIndex((u) => u.id === chosen);
-    if (i >= 0) await choose(units[i], $("units").children[i]);
-  }
-  let timer;
-  address.addEventListener("input", () => {
-    clearTimeout(timer);
-    version++;
+  function invalidateQuote() {
+    const had = quote !== null || quoting !== null;
+    quoteVersion++;
     quote = null;
     quotedAddress = "";
-    $("outside").hidden = true;
-    $("quote-status").textContent = "";
-    totals();
-    timer = setTimeout(fetchQuote, 500);
+    quoteError = "";
+    quoting = null;
+    quotingAddress = "";
+    quoteHint = had
+      ? "You changed the address, so the delivery price needs to be checked again."
+      : "";
+  }
+  function fetchQuote() {
+    const addr = address.value.trim();
+    if (quote && quotedAddress === addr) return Promise.resolve(true);
+    if (quoting && quotingAddress === addr) return quoting;
+    const ticket = ++quoteVersion;
+    quote = null;
+    quotedAddress = "";
+    quoteError = "";
+    quoteHint = "";
+    quotingAddress = addr;
+    const run = (async () => {
+      try {
+        const q = await api.getDeliveryQuote(addr);
+        if (ticket !== quoteVersion) return false;
+        if (!validQuote(q))
+          throw new Error(
+            "We couldn’t read the delivery price. Please try again or call 502-851-7596.",
+          );
+        quote = q;
+        quotedAddress = addr;
+        return true;
+      } catch (e) {
+        if (ticket === quoteVersion) quoteError = e.message;
+        return false;
+      } finally {
+        if (ticket === quoteVersion) {
+          quoting = null;
+          quotingAddress = "";
+          renderSummary();
+        }
+      }
+    })();
+    quoting = run;
+    renderSummary();
+    return run;
+  }
+  address.addEventListener("input", () => {
+    invalidateQuote();
+    renderSummary();
   });
-  address.addEventListener("blur", () => {
-    clearTimeout(timer);
+  checkBtn.addEventListener("click", () => {
+    if (checkField(address)) return address.focus();
+    if (address.value.trim().length < 5) {
+      $("delivery_address-error").textContent = "Enter your complete delivery address.";
+      address.setAttribute("aria-invalid", "true");
+      return address.focus();
+    }
     fetchQuote();
   });
-  async function fetchQuote() {
-    const addr = address.value.trim();
-    if (addr.length < 5) return;
-    const ticket = ++version;
-    quote = null;
-    $("quote-status").textContent = "Checking delivery to that address…";
-    totals();
-    try {
-      const q = await api.getDeliveryQuote(addr);
-      if (ticket !== version) return;
-      quote = q;
-      quotedAddress = addr;
-      $("outside").hidden = q.status !== "outside_area";
-      $("quote-status").textContent =
-        q.status === "outside_area"
-          ? ""
-          : q.status === "free"
-            ? `About ${q.distance_miles} miles away, so delivery is free. We'll confirm the details when we call.`
-            : `About ${q.distance_miles} miles away. That's past our free delivery zone, so delivery is ${money(q.fee)}. We'll confirm the details when we call.`;
-    } catch (e) {
-      if (ticket === version) $("quote-status").textContent = e.message;
-    } finally {
-      if (ticket === version) totals();
-    }
-  }
+  form.addEventListener("input", (e) => {
+    const el = e.target;
+    if (el.id && el.getAttribute("aria-invalid") === "true") checkField(el);
+    renderSummary();
+  });
+  form.addEventListener("change", renderSummary);
+  form.addEventListener("focusout", (e) => {
+    const el = e.target;
+    if (!el.matches?.("input,select") || !el.id || !el.value.trim()) return;
+    checkField(el);
+    if (
+      el === address &&
+      address.value.trim().length >= 5 &&
+      !el.getAttribute("aria-invalid")?.includes("true")
+    )
+      fetchQuote();
+  });
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    if (busy) return;
-    const valid = validate(form);
-    if (!$("date").value) {
+    if (busy || !unit) return;
+    setStatus("");
+    const fieldsOk = validate(form);
+    const noDate = !$("date").value;
+    if (noDate) {
       $("date-error").textContent = "Choose an available date.";
-      if (valid) $("calendar").querySelector("button:not(:disabled)")?.focus();
+      focusCalendar();
     }
-    if (!valid || !$("date").value) return;
-    if (!quote || quote.status === "outside_area" || address.value.trim() !== quotedAddress) {
-      $("booking-status").textContent =
-        "We need a delivery quote for an address in our area before you can send your request.";
+    if (!fieldsOk || noDate) {
+      setStatus("Please fix the items marked above, then send your request again.", "error");
       return;
     }
+    if (!quote || quotedAddress !== address.value.trim()) {
+      const ok = await fetchQuote();
+      setStatus(
+        ok && quote?.status !== "outside_area"
+          ? "Your delivery price is ready. Look over the total, then press Send my request."
+          : ok
+            ? "We can’t take an online request for this address. Please call or email Rena."
+            : "Your request has not been sent. We need a delivery price for your address first.",
+        ok && quote?.status !== "outside_area" ? "ok" : "error",
+      );
+      return;
+    }
+    if (quote.status === "outside_area") {
+      setStatus(
+        "We can’t take an online request for this address. Please call or email Rena.",
+        "error",
+      );
+      return;
+    }
+    const token = document.querySelector('[name="cf-turnstile-response"]')?.value;
+    if (!token) {
+      setStatus(
+        window.turnstile
+          ? "Please complete the security check above the Send button, then try again."
+          : "The security check did not load. Refresh the page, or call Rena at 502-851-7596 to make your request.",
+        "error",
+      );
+      return;
+    }
+    const fields = Object.fromEntries(new FormData(form));
+    const payload = { ...fields, delivery_address: quotedAddress, unit_id: unit.id };
+    // A retry of the same request reuses its key; changed details get a new one.
+    const signature = JSON.stringify(Object.entries({ ...payload, website: "" }).sort());
+    if (signature !== lastSignature) idempotency = crypto.randomUUID();
+    lastSignature = signature;
     busy = true;
-    totals();
     submit.textContent = "Sending…";
+    renderSummary();
     try {
-      const r = await api.createBookingRequest({
-        ...Object.fromEntries(new FormData(form)),
-        unit_id: unit.id,
-        idempotency_key: idempotency,
-      });
-      $("booking").hidden = true;
-      $("units").closest("section").hidden = true;
-      $("confirmation").hidden = false;
-      $("request-reference").textContent = "Request reference: " + r.id;
-      $("confirmation").focus();
+      const r = await api.createBookingRequest({ ...payload, idempotency_key: idempotency });
+      showConfirmation(r, fields);
     } catch (err) {
-      $("booking-status").textContent = err.message;
-      blocked = await api.getBlockedDates(unit.id);
-      if (blocked.includes($("date").value)) $("date").value = "";
-      drawCalendar();
+      setStatus(err.message, "error");
+      try {
+        const dates = await api.getBlockedDates(unit.id);
+        blocked = Array.isArray(dates) ? dates.filter((d) => typeof d === "string") : blocked;
+        if (blocked.includes($("date").value)) {
+          setDate("");
+          $("date-error").textContent = "That date was just taken. Please choose another.";
+        }
+        drawCalendar();
+      } catch {}
     } finally {
       window.turnstile?.reset();
       busy = false;
-      submit.textContent = "Send Booking Request";
-      totals();
+      submit.textContent = "Send my request";
+      renderSummary();
     }
   });
-  window.addEventListener("storage", () => location.reload());
+  function showConfirmation(r, fields) {
+    const list = $("confirm-details");
+    const money2 = (n) => (Number.isFinite(n) ? money(n) : null);
+    const fee = r.delivery_quote?.fee;
+    list.replaceChildren(
+      row("Inflatable", r.unit_name || unit.name),
+      row("Date", longDate(r.date || fields.date)),
+      row("Delivery to", r.delivery_address || fields.delivery_address),
+      row("Rental price", money2(r.unit_price) || money(unit.price)),
+      row("Delivery", fee === 0 ? "Free" : money2(fee) || "Rena will confirm"),
+      row("Estimated total", money2(r.total) || "Rena will confirm"),
+    );
+    $("confirm-email-note").textContent =
+      `We’ve queued a receipt email to ${r.email || fields.email}.`;
+    $("request-reference").textContent = "Request reference: " + r.id;
+    $("booking-flow").hidden = true;
+    $("confirmation").hidden = false;
+    document.title = "Request received | All About That Bounce";
+    $("confirmation").focus();
+    $("confirmation").scrollIntoView({ behavior: "auto", block: "start" });
+  }
+  async function loadUnits() {
+    const box = $("units");
+    box.setAttribute("aria-busy", "true");
+    box.replaceChildren(text("p", "Loading inflatables…"));
+    $("units-retry").hidden = true;
+    let units;
+    try {
+      units = await api.listUnits();
+      if (!Array.isArray(units)) throw new Error(unavailableMessage);
+    } catch (e) {
+      box.textContent = e.message;
+      box.setAttribute("aria-busy", "false");
+      $("units-retry").hidden = false;
+      return;
+    }
+    box.setAttribute("aria-busy", "false");
+    if (!units.length) {
+      $("booking-flow").hidden = true;
+      $("empty-state").hidden = false;
+      $("page-lead").textContent =
+        "Online requests aren’t open yet. Rena is glad to help by phone or email.";
+      return;
+    }
+    box.replaceChildren(...units.map((u) => bookingCard(u, choose)));
+    const wanted = new URLSearchParams(location.search).get("unit");
+    if (wanted) {
+      const i = units.findIndex((u) => u.id === wanted);
+      if (i >= 0) await choose(units[i], box.children[i]);
+      else {
+        $("units-notice").textContent =
+          "The inflatable you picked isn’t listed right now. Choose another one below.";
+        $("units-notice").hidden = false;
+      }
+    }
+  }
+  $("retry-units").addEventListener("click", loadUnits);
+  api
+    .getSettings()
+    .then((s) => {
+      if (!Number.isFinite(s?.free_radius_miles)) return;
+      freeMiles = s.free_radius_miles;
+      $("delivery-policy").textContent =
+        `Delivery is free within ${freeMiles} driving miles. Beyond that, the fee depends on distance.`;
+      renderSummary();
+    })
+    .catch(() => {});
+  await loadUnits();
 }
 init().catch((e) => {
   const target = $("units") || $("featured") || $("contact-status");

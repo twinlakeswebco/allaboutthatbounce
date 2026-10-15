@@ -47,91 +47,148 @@
     <main id="main">
       <div class="page-head wrap">
         <h1>Let’s plan some fun.</h1>
-        <p>
-          <strong>This is a booking request only.</strong> Your date is not booked until the owner
-          confirms it.
+        <p class="lead" id="page-lead">
+          Choose an inflatable, pick a date and tell us where to set up. Rena personally reviews
+          every request and will be in touch to confirm.
         </p>
+        <ul class="facts" aria-label="How booking works">
+          <li><strong>Request only.</strong> Nothing is booked until Rena confirms.</li>
+          <li><strong>Pay at delivery</strong> by cash or check.</li>
+          <li><strong>No deposit</strong> and no online payment.</li>
+        </ul>
       </div>
       <div class="wrap">
-        <section class="section">
-          <h2>Choose your inflatable.</h2>
-          <div class="grid" id="units" aria-live="polite"><p>Loading inflatables…</p></div>
+        <section id="empty-state" class="panel empty-state" tabindex="-1" hidden>
+          <span class="tag">Online requests opening soon</span>
+          <h2>Our inflatables are still being added.</h2>
+          <p>
+            Nothing is listed on this page yet, so there is nothing to request online right now.
+            Call or email Rena to talk through your event and ask about availability.
+          </p>
+          <div class="actions">
+            <a class="button" href="tel:5028517596">Call 502-851-7596</a>
+            <a class="button secondary" href="mailto:allaboutthatbounce7596@gmail.com"
+              >Email Rena</a
+            >
+            <a class="button quiet" href="contact.html">Send a message</a>
+          </div>
+          <p class="muted">
+            Serving Oldham, Shelby, Henry, Trimble and Jefferson counties, Kentucky. Payment is cash
+            or check at delivery, with no deposit.
+          </p>
         </section>
-        <div id="booking" hidden>
-          <div class="booking-layout">
-            <form id="booking-form" class="panel" novalidate>
-              <h2>Choose your date.</h2>
-              <div
-                id="calendar"
-                class="calendar"
-                role="group"
-                aria-label="Choose an available rental date"
-                aria-describedby="date-error"
-              ></div>
-              <input type="hidden" name="date" id="date" />
-              <div id="date-error" class="error" role="status"></div>
-              <p class="muted">
-                Crossed-out dates are unavailable. A request does not hold a date.
-              </p>
-              <h2>Your party details.</h2>
-              <div class="form-grid">
-                <div>
-                  <label for="name">Your name</label
-                  ><input
-                    id="name"
-                    name="name"
-                    type="text"
-                    required
-                    autocomplete="name"
-                    maxlength="100"
-                    aria-describedby="name-error"
-                  />
-                  <div class="error" id="name-error"></div>
-                </div>
-                <div>
-                  <label for="phone">Phone</label
-                  ><input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    required
-                    autocomplete="tel"
-                    maxlength="30"
-                    aria-describedby="phone-error"
-                  />
-                  <div class="error" id="phone-error"></div>
-                </div>
-                <div>
-                  <label for="email">Email</label
-                  ><input
-                    id="email"
-                    name="email"
-                    type="email"
-                    required
-                    autocomplete="email"
-                    maxlength="200"
-                    aria-describedby="email-error"
-                  />
-                  <div class="error" id="email-error"></div>
-                </div>
-                <div>
-                  <label for="event_type">Event type</label
-                  ><select
-                    id="event_type"
-                    name="event_type"
-                    required
-                    aria-describedby="event_type-error"
-                  >
-                    <option value="">Choose an event</option>
-                    <option>Backyard or birthday party</option>
-                    <option>School event</option>
-                    <option>Church function</option>
-                    <option>Festival or community event</option>
-                    <option>Other</option>
-                  </select>
-                  <div class="error" id="event_type-error"></div>
-                </div>
-                <div class="wide">
+        <div id="booking-flow">
+          <section id="choose-section" class="section" aria-labelledby="units-title">
+            <h2 id="units-title">
+              <span class="step-num" aria-hidden="true">1</span>Choose your inflatable.
+            </h2>
+            <p id="units-notice" class="notice" role="status" hidden></p>
+            <div class="grid" id="units" aria-live="polite" aria-busy="true">
+              <p>Loading inflatables…</p>
+            </div>
+            <div id="units-retry" class="actions" hidden>
+              <button type="button" id="retry-units">Try again</button>
+              <a class="button secondary" href="tel:5028517596">Call 502-851-7596</a>
+              <a class="button quiet" href="mailto:allaboutthatbounce7596@gmail.com">Email Rena</a>
+            </div>
+          </section>
+          <div id="booking" hidden>
+            <div class="booking-layout">
+              <form id="booking-form" novalidate>
+                <section class="panel" aria-labelledby="date-title">
+                  <h2 id="date-title" tabindex="-1">
+                    <span class="step-num" aria-hidden="true">2</span>Pick your date.
+                  </h2>
+                  <p id="date-readout" class="readout" role="status">No date chosen yet.</p>
+                  <div
+                    id="calendar"
+                    class="calendar"
+                    role="group"
+                    aria-label="Choose an available rental date"
+                    aria-describedby="date-error date-help"
+                  ></div>
+                  <input type="hidden" name="date" id="date" />
+                  <div id="date-error" class="error" role="status"></div>
+                  <ul class="legend" id="date-help">
+                    <li><span class="swatch open"></span>Available</li>
+                    <li><span class="swatch chosen"></span>Your date</li>
+                    <li><span class="swatch taken"></span>Booked or unavailable</li>
+                  </ul>
+                  <p class="muted">
+                    Sending a request does not hold a date. A date is held only once Rena confirms
+                    your request.
+                  </p>
+                </section>
+                <section class="panel" aria-labelledby="details-title">
+                  <h2 id="details-title">
+                    <span class="step-num" aria-hidden="true">3</span>Your details.
+                  </h2>
+                  <div class="form-grid">
+                    <div>
+                      <label for="name">Your name</label
+                      ><input
+                        id="name"
+                        name="name"
+                        type="text"
+                        required
+                        minlength="2"
+                        autocomplete="name"
+                        maxlength="100"
+                        aria-describedby="name-error"
+                      />
+                      <div class="error" id="name-error"></div>
+                    </div>
+                    <div>
+                      <label for="phone">Phone</label
+                      ><input
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        required
+                        inputmode="tel"
+                        autocomplete="tel"
+                        maxlength="30"
+                        aria-describedby="phone-error"
+                      />
+                      <div class="error" id="phone-error"></div>
+                    </div>
+                    <div>
+                      <label for="email">Email</label
+                      ><input
+                        id="email"
+                        name="email"
+                        type="email"
+                        required
+                        inputmode="email"
+                        autocomplete="email"
+                        maxlength="200"
+                        aria-describedby="email-error"
+                      />
+                      <div class="error" id="email-error"></div>
+                    </div>
+                    <div>
+                      <label for="event_type">Event type</label
+                      ><select
+                        id="event_type"
+                        name="event_type"
+                        required
+                        aria-describedby="event_type-error"
+                      >
+                        <option value="">Choose an event</option>
+                        <option>Backyard or birthday party</option>
+                        <option>School event</option>
+                        <option>Church function</option>
+                        <option>Festival or community event</option>
+                        <option>Other</option>
+                      </select>
+                      <div class="error" id="event_type-error"></div>
+                    </div>
+                  </div>
+                </section>
+                <section class="panel" aria-labelledby="delivery-title">
+                  <h2 id="delivery-title">
+                    <span class="step-num" aria-hidden="true">4</span>Where is the party?
+                  </h2>
                   <label for="delivery_address">Event delivery address</label
                   ><input
                     id="delivery_address"
@@ -140,76 +197,140 @@
                     required
                     autocomplete="street-address"
                     maxlength="500"
-                    placeholder="Street, city, state, ZIP"
-                    aria-describedby="delivery_address-error"
+                    placeholder="Street, city, KY, ZIP"
+                    aria-describedby="delivery_address-hint delivery_address-error"
                   />
                   <div class="error" id="delivery_address-error"></div>
+                  <p class="muted" id="delivery_address-hint">
+                    We deliver to Oldham, Shelby, Henry, Trimble and Jefferson counties in Kentucky.
+                    Include the street, city and ZIP.
+                    <span id="delivery-policy"></span>
+                  </p>
+                  <button type="button" id="check-delivery" class="secondary">
+                    Check delivery price
+                  </button>
+                  <div id="quote-status" class="status" role="status" aria-live="polite"></div>
+                  <div id="outside" class="notice" hidden>
+                    <strong>This address is outside our delivery area.</strong>Please
+                    <a href="tel:5028517596">call 502-851-7596</a> or
+                    <a href="mailto:allaboutthatbounce7596@gmail.com">email us</a> so Rena can
+                    discuss your event personally.
+                  </div>
+                  <div id="deposit" class="notice" hidden>
+                    <strong>This inflatable has special arrangements.</strong>Rena will go over the
+                    details when confirming your date. No advance deposit is needed, and nothing is
+                    paid online.
+                  </div>
+                  <input
+                    class="honeypot"
+                    type="text"
+                    name="website"
+                    tabindex="-1"
+                    autocomplete="off"
+                    aria-hidden="true"
+                  />
+                </section>
+              </form>
+              <aside class="panel summary" aria-labelledby="summary-title">
+                <h2 id="summary-title">
+                  <span class="step-num" aria-hidden="true">5</span>Review and send.
+                </h2>
+                <p id="chosen-name" class="summary-unit"></p>
+                <dl class="review-list" aria-live="polite">
+                  <div>
+                    <dt>Date</dt>
+                    <dd id="sum-date"></dd>
+                  </div>
+                  <div>
+                    <dt>Name</dt>
+                    <dd id="sum-name"></dd>
+                  </div>
+                  <div>
+                    <dt>Phone</dt>
+                    <dd id="sum-phone"></dd>
+                  </div>
+                  <div>
+                    <dt>Email</dt>
+                    <dd id="sum-email"></dd>
+                  </div>
+                  <div>
+                    <dt>Event</dt>
+                    <dd id="sum-event"></dd>
+                  </div>
+                  <div>
+                    <dt>Delivery to</dt>
+                    <dd id="sum-address"></dd>
+                  </div>
+                </dl>
+                <div class="total"><span>Rental price</span><span id="unit-price"></span></div>
+                <div class="total">
+                  <span>Delivery</span><span id="delivery-price">Add address</span>
                 </div>
-              </div>
-              <div id="quote-status" class="status" aria-live="polite"></div>
-              <div id="outside" class="notice" hidden>
-                <strong>This address is outside our delivery area.</strong>Please
-                <a href="tel:5028517596">call 502-851-7596</a> or
-                <a href="mailto:allaboutthatbounce7596@gmail.com">email us</a> so the owner can
-                discuss your event personally.
-              </div>
-              <div id="deposit" class="notice" hidden>
-                <strong>This inflatable has special arrangements.</strong>The owner will go over the
-                details when she confirms your date. No advance deposit is needed, and nothing is
-                paid online.
-              </div>
-              <div class="notice">
-                <strong>Request only, not a reservation.</strong>Your date isn’t booked until the
-                owner confirms it with you. No deposit to hold a date. Payment is due in full at
-                delivery, before setup, by cash or check.
-              </div>
-              <input
-                type="text"
-                name="website"
-                tabindex="-1"
-                autocomplete="off"
-                aria-hidden="true"
-                style="position: absolute; left: -10000px"
-              />
-              <div
-                class="cf-turnstile"
-                data-sitekey="0x4AAAAAAFXbtM87KBurZyOK"
-                data-action="booking"
-              ></div>
-              <button type="submit" id="send-request" disabled>Send Booking Request</button>
-              <div id="booking-status" class="status" role="status"></div>
-            </form>
-            <aside class="panel summary" aria-live="polite">
-              <h2>Your estimate</h2>
-              <p id="chosen-name"></p>
-              <div class="total"><span>Inflatable</span><span id="unit-price"></span></div>
-              <div class="total">
-                <span>Delivery estimate</span><span id="delivery-price">Enter address</span>
-              </div>
-              <div class="total grand">
-                <span>Estimated total</span><span id="total-price"></span>
-              </div>
-              <p class="muted">
-                Final availability, delivery, and total are confirmed by the owner.
-              </p>
-            </aside>
+                <div class="total grand">
+                  <span>Estimated total</span><span id="total-price">—</span>
+                </div>
+                <p id="total-note" class="muted"></p>
+                <div class="notice">
+                  <strong>Request only, not a reservation.</strong>Your date isn’t booked until Rena
+                  confirms it. No deposit. Payment is due in full at delivery, before setup, by cash
+                  or check.
+                </div>
+                <div
+                  class="cf-turnstile"
+                  data-sitekey="0x4AAAAAAFXbtM87KBurZyOK"
+                  data-action="booking"
+                ></div>
+                <button type="submit" id="send-request" form="booking-form" class="send">
+                  Send my request
+                </button>
+                <div id="booking-status" class="status" role="alert"></div>
+              </aside>
+            </div>
           </div>
         </div>
-        <section id="confirmation" class="panel" tabindex="-1" hidden>
-          <h2>Request sent.</h2>
-          <p>
-            Thanks! The owner will review your request and contact you to confirm availability,
-            delivery, and your final total.
+        <section id="confirmation" class="panel confirmation" tabindex="-1" hidden>
+          <span class="tag pending-tag">Pending · waiting for Rena</span>
+          <h2>Request received. You are not booked yet.</h2>
+          <p class="lead">
+            Rena will review your request and contact you to confirm your date, delivery and final
+            total. <strong>Your date is not held until Rena confirms it.</strong>
           </p>
-          <p>
-            <strong>Your date isn’t booked until she confirms it.</strong> Keep an eye on your email
-            (and spam folder). Questions? Call <a href="tel:5028517596">502-851-7596</a>.
-          </p>
-          <p id="request-reference"></p>
-          <a class="button" href="book.html">Start another request</a>
+          <dl class="review-list" id="confirm-details"></dl>
+          <h3>What happens next</h3>
+          <ol class="next-steps">
+            <li>Rena reviews your request and either confirms it or declines it.</li>
+            <li>You hear back by email or phone either way.</li>
+            <li>If confirmed, you pay by cash or check at delivery, before setup.</li>
+          </ol>
+          <div class="notice">
+            <strong id="confirm-email-note"></strong>Email can be delayed or land in spam, so check
+            there too. Your request is saved either way. If you have not heard from Rena, call
+            <a href="tel:5028517596">502-851-7596</a> or email
+            <a href="mailto:allaboutthatbounce7596@gmail.com">allaboutthatbounce7596@gmail.com</a>.
+          </div>
+          <p id="request-reference" class="muted"></p>
+          <div class="actions">
+            <a class="button" href="tel:5028517596">Call Rena</a>
+            <a class="button quiet" href="book.html">Start another request</a>
+          </div>
         </section>
         <section class="section" aria-labelledby="faq-title">
           <h2 id="faq-title">Good to know.</h2>
+          <details class="policy">
+            <summary><strong>When is my date booked?</strong></summary>
+            <p>
+              Only when Rena confirms your request. Sending the form does not hold a date, and you
+              will not be charged anything online.
+            </p>
+          </details>
+          <details class="policy">
+            <summary><strong>Where do you deliver?</strong></summary>
+            <p>
+              Oldham, Shelby, Henry, Trimble and Jefferson counties in Kentucky. If your event is
+              somewhere else, call <a href="tel:5028517596">502-851-7596</a> and we’ll talk it
+              through.
+            </p>
+          </details>
           <details class="policy">
             <summary><strong>How long is the rental?</strong></summary>
             <p>
@@ -250,8 +371,8 @@
           <details class="policy">
             <summary><strong>Is there a delivery fee?</strong></summary>
             <p>
-              A delivery fee applies beyond 15 miles. Your estimate shows it when you enter your
-              address, and the owner confirms it with you.
+              A delivery fee applies beyond 15 miles. Your estimate shows it when you check your
+              address, and Rena confirms it with you.
             </p>
           </details>
           <details class="policy">
@@ -289,7 +410,8 @@
     </footer>
     <noscript
       ><p class="wrap">
-        JavaScript is needed for booking and admin tools. Please call or email for help.
+        JavaScript is needed to send a booking request. Please call 502-851-7596 or email
+        allaboutthatbounce7596@gmail.com.
       </p></noscript
     >
   </body>
