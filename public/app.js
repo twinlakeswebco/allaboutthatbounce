@@ -319,7 +319,7 @@ async function booking() {
       $("booking").hidden = true;
       $("units").closest("section").hidden = true;
       $("confirmation").hidden = false;
-      $("request-reference").textContent = "Request number: " + r.id;
+      $("request-reference").textContent = "Request reference: " + r.id;
       $("confirmation").focus();
     } catch (err) {
       $("booking-status").textContent = err.message;
