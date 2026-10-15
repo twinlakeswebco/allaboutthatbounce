@@ -1,0 +1,475 @@
+import {
+  json,
+  fail,
+  body,
+  requireJson,
+  bookingError,
+  unitError,
+  settingsError,
+  emailOk,
+  dateOk,
+  nyToday,
+  centsToDollars,
+} from "./validation.js";
+import { getQuote } from "./distance.js";
+import { verifyAdmin, adminWriteGuard } from "./access.js";
+import { requestMails, decisionMail, contactMail, outboxStatement, sendOutbox } from "./email.js";
+import { savePhotos, media } from "./storage.js";
+const enc = new TextEncoder();
+function unitOut(u, photos = []) {
+  return {
+    id: u.id,
+    name: u.name,
+    description: u.description,
+    size: u.size,
+    mode: u.mode,
+    price: centsToDollars(u.price_cents),
+    photos,
+    deposit_required: !!u.deposit_required,
+  };
+}
+function requestOut(r) {
+  return {
+    id: r.id,
+    idempotency_key: r.idempotency_key,
+    unit_id: r.unit_id,
+    date: r.event_date,
+    status: r.status,
+    name: r.name,
+    phone: r.phone,
+    email: r.email,
+    event_type: r.event_type,
+    delivery_address: r.delivery_address,
+    created_at: r.created_at,
+    unit_name: r.unit_name,
+    unit_price: centsToDollars(r.unit_price_cents),
+    delivery_quote: {
+      distance_miles: r.distance_miles,
+      fee: centsToDollars(r.delivery_fee_cents),
+      status: r.delivery_fee_cents === 0 ? "free" : "fee",
+    },
+    total: centsToDollars(r.total_cents),
+  };
+}
+async function ipBucket(req, env, kind, limit) {
+  const ip = req.headers.get("CF-Connecting-IP") || "unknown";
+  const key = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(env.IP_HASH_SECRET),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(ip)),
+    hash = [...new Uint8Array(sig)].map((x) => x.toString(16).padStart(2, "0")).join("");
+  const now = new Date(),
+    windowStart = new Date(Math.floor(now.getTime() / 3600000) * 3600000).toISOString();
+  const bucket = `${kind}:${hash}`;
+  await env.DB.prepare(
+    "INSERT INTO rate_limits(bucket,window_start,count) VALUES(?,?,1) ON CONFLICT(bucket,window_start) DO UPDATE SET count=count+1",
+  )
+    .bind(bucket, windowStart)
+    .run();
+  const row = await env.DB.prepare(
+    "SELECT count FROM rate_limits WHERE bucket=? AND window_start=?",
+  )
+    .bind(bucket, windowStart)
+    .first();
+  return row.count <= limit;
+}
+async function turnstile(req, env, token) {
+  if (!token) return false;
+  const f = new FormData();
+  f.set("secret", env.TURNSTILE_SECRET);
+  f.set("response", token);
+  const ip = req.headers.get("CF-Connecting-IP");
+  if (ip) f.set("remoteip", ip);
+  try {
+    const r = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      body: f,
+    });
+    return !!(await r.json()).success;
+  } catch {
+    return false;
+  }
+}
+async function listUnits(env) {
+  const rows = await env.DB.prepare(
+    "SELECT * FROM units WHERE deleted_at IS NULL ORDER BY sort_order,id",
+  ).all();
+  const out = [];
+  for (const u of rows.results || []) {
+    const p = await env.DB.prepare(
+      "SELECT r2_key FROM unit_photos WHERE unit_id=? ORDER BY position",
+    )
+      .bind(u.id)
+      .all();
+    out.push(
+      unitOut(
+        u,
+        (p.results || []).map((x) => "/media/" + x.r2_key),
+      ),
+    );
+  }
+  return json(out);
+}
+async function settings(env) {
+  const s = await env.DB.prepare("SELECT * FROM settings WHERE id=1").first();
+  return json({
+    free_radius_miles: s.free_radius_miles,
+    per_mile_rate: s.per_mile_rate_cents / 100,
+    trip_multiplier: s.trip_multiplier,
+    max_delivery_miles: s.max_delivery_miles,
+  });
+}
+async function blocked(env, id) {
+  const r = await env.DB.prepare(
+    "SELECT date FROM blocks WHERE unit_id=? AND date>=? UNION SELECT event_date AS date FROM booking_requests WHERE unit_id=? AND status='confirmed' AND event_date>=? ORDER BY date",
+  )
+    .bind(id, nyToday(), id, nyToday())
+    .all();
+  return json(
+    (r.results || []).map((x) => x.date),
+    200,
+    { "cache-control": "no-store" },
+  );
+}
+async function quoteRoute(req, env) {
+  if (!(await ipBucket(req, env, "quote", 60)))
+    return fail("Too many delivery quote requests. Please try again later.", 429);
+  const x = await body(req);
+  const q = await getQuote(x?.address, env);
+  return q.error || json(q.quote);
+}
+async function booking(req, env, ctx) {
+  if (!(await ipBucket(req, env, "booking", 10)))
+    return fail("Too many booking requests. Please try again later.", 429);
+  const x = await body(req);
+  if (x?.website) return fail("Unable to submit request.", 400);
+  if (!(await turnstile(req, env, x?.turnstile_token)))
+    return fail("Please complete the verification and try again.", 400);
+  const err = bookingError(x);
+  if (err) return fail(err);
+  const existing = await env.DB.prepare("SELECT * FROM booking_requests WHERE idempotency_key=?")
+    .bind(x.idempotency_key)
+    .first();
+  if (existing) {
+    if (String(existing.email).toLowerCase() !== String(x.email).toLowerCase())
+      return fail("That request key is already in use.", 409);
+    return json(requestOut(existing));
+  }
+  const u = await env.DB.prepare("SELECT * FROM units WHERE id=? AND deleted_at IS NULL")
+    .bind(x.unit_id)
+    .first();
+  if (!u) return fail("That inflatable or date is no longer available. Choose another date.", 409);
+  const unavailable = await env.DB.prepare(
+    "SELECT 1 AS x FROM blocks WHERE unit_id=? AND date=? UNION SELECT 1 FROM booking_requests WHERE unit_id=? AND event_date=? AND status='confirmed' LIMIT 1",
+  )
+    .bind(u.id, x.date, u.id, x.date)
+    .first();
+  if (unavailable)
+    return fail("That inflatable or date is no longer available. Choose another date.", 409);
+  const q = await getQuote(x.delivery_address, env);
+  if (q.error) return q.error;
+  if (q.quote.status === "outside_area")
+    return fail("This address is outside the delivery area. Please call or email.", 422);
+  const r = {
+    id: crypto.randomUUID(),
+    idempotency_key: x.idempotency_key,
+    unit_id: u.id,
+    unit_name: u.name,
+    unit_price_cents: u.price_cents,
+    event_date: x.date,
+    status: "pending",
+    name: x.name.trim(),
+    phone: x.phone.trim(),
+    email: x.email.trim(),
+    event_type: x.event_type.trim(),
+    delivery_address: x.delivery_address.trim(),
+    distance_miles: q.quote.distance_miles,
+    delivery_fee_cents: Math.round(q.quote.fee * 100),
+    total_cents: u.price_cents + Math.round(q.quote.fee * 100),
+    created_at: new Date().toISOString(),
+  };
+  const mails = requestMails(r, env);
+  try {
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO booking_requests(id,idempotency_key,unit_id,unit_name,unit_price_cents,event_date,status,name,phone,email,event_type,delivery_address,distance_miles,delivery_fee_cents,total_cents,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+      ).bind(
+        r.id,
+        r.idempotency_key,
+        r.unit_id,
+        r.unit_name,
+        r.unit_price_cents,
+        r.event_date,
+        r.status,
+        r.name,
+        r.phone,
+        r.email,
+        r.event_type,
+        r.delivery_address,
+        r.distance_miles,
+        r.delivery_fee_cents,
+        r.total_cents,
+        r.created_at,
+      ),
+      ...mails.map((m) => outboxStatement(env, m)),
+    ]);
+  } catch (e) {
+    if (String(e).includes("idempotency")) {
+      const again = await env.DB.prepare("SELECT * FROM booking_requests WHERE idempotency_key=?")
+        .bind(x.idempotency_key)
+        .first();
+      if (again && String(again.email).toLowerCase() === String(x.email).toLowerCase())
+        return json(requestOut(again));
+    }
+    throw e;
+  }
+  for (const m of mails) ctx.waitUntil(sendOutbox(env, m.id));
+  return json(requestOut(r), 201);
+}
+async function contact(req, env, ctx) {
+  if (!(await ipBucket(req, env, "contact", 5)))
+    return fail("Too many contact messages. Please try again later.", 429);
+  const x = await body(req);
+  if (x?.website) return fail("Unable to submit message.", 400);
+  if (!(await turnstile(req, env, x?.turnstile_token)))
+    return fail("Please complete the verification and try again.", 400);
+  if (
+    !x?.name?.trim() ||
+    !emailOk(x?.email) ||
+    !x?.message?.trim() ||
+    x.name.length > 100 ||
+    x.email.length > 200 ||
+    x.message.length > 3000
+  )
+    return fail("Complete every field.");
+  const id = crypto.randomUUID(),
+    m = contactMail(x, env);
+  await env.DB.batch([
+    env.DB.prepare("INSERT INTO contact_messages(id,name,email,message) VALUES(?,?,?,?)").bind(
+      id,
+      x.name.trim(),
+      x.email.trim(),
+      x.message.trim(),
+    ),
+    outboxStatement(env, m),
+  ]);
+  ctx.waitUntil(sendOutbox(env, m.id));
+  return json({ id, status: "received" }, 201);
+}
+async function updateSettings(req, env, email) {
+  const x = await body(req),
+    e = settingsError(x);
+  if (e) return fail(e);
+  await env.DB.prepare(
+    "UPDATE settings SET free_radius_miles=?,per_mile_rate_cents=?,trip_multiplier=?,max_delivery_miles=?,updated_at=datetime('now'),updated_by=? WHERE id=1",
+  )
+    .bind(
+      x.free_radius_miles,
+      Math.round(x.per_mile_rate * 100),
+      x.trip_multiplier,
+      x.max_delivery_miles,
+      email,
+    )
+    .run();
+  return settings(env);
+}
+async function listRequests(env) {
+  const r = await env.DB.prepare("SELECT * FROM booking_requests ORDER BY created_at DESC").all();
+  return json((r.results || []).map(requestOut));
+}
+async function status(req, env, ctx, id, email) {
+  const x = await body(req);
+  if (!["confirmed", "declined"].includes(x?.status)) return fail("Invalid status.");
+  const r = await env.DB.prepare("SELECT * FROM booking_requests WHERE id=?").bind(id).first();
+  if (!r || r.status !== "pending")
+    return fail("This request is no longer pending. Refresh the list.", 409);
+  const m = decisionMail(r, x.status);
+  const decisionToken = crypto.randomUUID();
+  try {
+    let st;
+    if (x.status === "confirmed")
+      st = env.DB.prepare(
+        "UPDATE booking_requests SET status='confirmed',decided_at=datetime('now'),decided_by=?,decision_token=? WHERE id=? AND status='pending' AND NOT EXISTS(SELECT 1 FROM blocks WHERE unit_id=booking_requests.unit_id AND date=booking_requests.event_date)",
+      ).bind(email, decisionToken, id);
+    else
+      st = env.DB.prepare(
+        "UPDATE booking_requests SET status='declined',decided_at=datetime('now'),decided_by=?,decision_token=? WHERE id=? AND status='pending'",
+      ).bind(email, decisionToken, id);
+    const results = await env.DB.batch([st, outboxStatement(env, m, { id, token: decisionToken })]);
+    if (!results[0].meta.changes)
+      return fail(
+        x.status === "confirmed"
+          ? "That unit or date is unavailable. Resolve the calendar conflict first."
+          : "This request is no longer pending. Refresh the list.",
+        409,
+      );
+  } catch (e) {
+    if (String(e).toLowerCase().includes("unique"))
+      return fail("That unit or date is unavailable. Resolve the calendar conflict first.", 409);
+    throw e;
+  }
+  ctx.waitUntil(sendOutbox(env, m.id));
+  const saved = await env.DB.prepare("SELECT * FROM booking_requests WHERE id=?").bind(id).first();
+  return json(requestOut(saved));
+}
+async function saveUnitRoute(req, env, id) {
+  const x = await body(req),
+    e = unitError(x);
+  if (e) return fail(e);
+  if (x.photos && !Array.isArray(x.photos))
+    return fail("Use no more than 5 photos per inflatable.");
+  const uid = id || crypto.randomUUID();
+  if (
+    id &&
+    !(await env.DB.prepare("SELECT 1 AS x FROM units WHERE id=? AND deleted_at IS NULL")
+      .bind(id)
+      .first())
+  )
+    return fail("Inflatable not found.", 404);
+  const cents = Math.round(x.price * 100);
+  if (id)
+    await env.DB.prepare(
+      "UPDATE units SET name=?,description=?,size=?,mode=?,price_cents=?,deposit_required=?,updated_at=datetime('now') WHERE id=?",
+    )
+      .bind(
+        x.name.trim(),
+        x.description.trim(),
+        x.size.trim(),
+        x.mode,
+        cents,
+        x.deposit_required ? 1 : 0,
+        id,
+      )
+      .run();
+  else
+    await env.DB.prepare(
+      "INSERT INTO units(id,name,description,size,mode,price_cents,deposit_required,sort_order) VALUES(?,?,?,?,?,?,?,COALESCE((SELECT MAX(sort_order)+1 FROM units),1))",
+    )
+      .bind(
+        uid,
+        x.name.trim(),
+        x.description.trim(),
+        x.size.trim(),
+        x.mode,
+        cents,
+        x.deposit_required ? 1 : 0,
+      )
+      .run();
+  let photos;
+  try {
+    photos = await savePhotos(env, uid, x.photos || []);
+  } catch (err) {
+    if (!id) await env.DB.prepare("DELETE FROM units WHERE id=?").bind(uid).run();
+    return fail(err.message);
+  }
+  const u = await env.DB.prepare("SELECT * FROM units WHERE id=?").bind(uid).first();
+  return json(unitOut(u, photos), id ? 200 : 201);
+}
+async function deleteUnit(env, id) {
+  if (
+    await env.DB.prepare(
+      "SELECT 1 AS x FROM booking_requests WHERE unit_id=? AND status IN ('pending','confirmed') AND event_date>=? LIMIT 1",
+    )
+      .bind(id, nyToday())
+      .first()
+  )
+    return fail(
+      "This inflatable has pending or confirmed requests. Keep it until those requests are resolved.",
+      409,
+    );
+  const photos = await env.DB.prepare("SELECT r2_key FROM unit_photos WHERE unit_id=?")
+    .bind(id)
+    .all();
+  await env.DB.batch([
+    env.DB.prepare(
+      "UPDATE units SET deleted_at=datetime('now'),updated_at=datetime('now') WHERE id=?",
+    ).bind(id),
+    env.DB.prepare("DELETE FROM blocks WHERE unit_id=?").bind(id),
+    env.DB.prepare("DELETE FROM unit_photos WHERE unit_id=?").bind(id),
+  ]);
+  await Promise.all((photos.results || []).map((photo) => env.PHOTOS.delete(photo.r2_key)));
+  return json({ deleted: true });
+}
+async function block(env, id, date, email, on) {
+  if (
+    !dateOk(date) ||
+    !(await env.DB.prepare("SELECT 1 AS x FROM units WHERE id=? AND deleted_at IS NULL")
+      .bind(id)
+      .first())
+  )
+    return fail("Choose a unit and date.");
+  if (
+    !on &&
+    (await env.DB.prepare(
+      "SELECT 1 AS x FROM booking_requests WHERE unit_id=? AND event_date=? AND status='confirmed'",
+    )
+      .bind(id, date)
+      .first())
+  )
+    return fail("A confirmed rental uses this date; it cannot be unblocked here.", 409);
+  if (on)
+    await env.DB.prepare("INSERT OR IGNORE INTO blocks(unit_id,date,created_by) VALUES(?,?,?)")
+      .bind(id, date, email)
+      .run();
+  else await env.DB.prepare("DELETE FROM blocks WHERE unit_id=? AND date=?").bind(id, date).run();
+  return json({ unit_id: id, date, blocked: on });
+}
+async function route(req, env, ctx) {
+  const u = new URL(req.url),
+    p = u.pathname;
+  if (p.startsWith("/media/")) return media(env, decodeURIComponent(p.slice(7)));
+  if (!p.startsWith("/api/")) return env.ASSETS.fetch(req);
+  if (req.method === "GET" && p === "/api/units") return listUnits(env);
+  if (req.method === "GET" && p === "/api/settings") return settings(env);
+  let m = p.match(/^\/api\/units\/([^/]+)\/blocked-dates$/);
+  if (req.method === "GET" && m) return blocked(env, decodeURIComponent(m[1]));
+  if (req.method === "POST" && p === "/api/delivery-quote") return quoteRoute(req, env);
+  if (req.method === "POST" && p === "/api/booking-requests") return booking(req, env, ctx);
+  if (req.method === "POST" && p === "/api/contact") return contact(req, env, ctx);
+  if (!p.startsWith("/api/admin/")) return fail("Not found.", 404);
+  const auth = await verifyAdmin(req, env);
+  if (auth.error) return auth.error;
+  const guard = adminWriteGuard(req, env);
+  if (guard) return guard;
+  if (req.method === "PUT" && p === "/api/admin/settings")
+    return updateSettings(req, env, auth.email);
+  if (req.method === "GET" && p === "/api/admin/booking-requests") return listRequests(env);
+  m = p.match(/^\/api\/admin\/booking-requests\/([^/]+)\/status$/);
+  if (req.method === "POST" && m)
+    return status(req, env, ctx, decodeURIComponent(m[1]), auth.email);
+  if (req.method === "POST" && p === "/api/admin/units") return saveUnitRoute(req, env);
+  m = p.match(/^\/api\/admin\/units\/([^/]+)$/);
+  if (m && req.method === "PUT") return saveUnitRoute(req, env, decodeURIComponent(m[1]));
+  if (m && req.method === "DELETE") return deleteUnit(env, decodeURIComponent(m[1]));
+  m = p.match(/^\/api\/admin\/units\/([^/]+)\/blocked-dates\/(\d{4}-\d{2}-\d{2})$/);
+  if (m && (req.method === "PUT" || req.method === "DELETE"))
+    return block(env, decodeURIComponent(m[1]), m[2], auth.email, req.method === "PUT");
+  return fail("Not found.", 404);
+}
+export default {
+  fetch(req, env, ctx) {
+    return route(req, env, ctx).catch(() => fail("Something went wrong. Please try again.", 500));
+  },
+  async scheduled(event, env, ctx) {
+    const rows = await env.DB.prepare(
+      "SELECT id FROM notification_outbox WHERE status IN ('pending','failed') AND attempts<5 ORDER BY created_at LIMIT 50",
+    ).all();
+    for (const r of rows.results || []) ctx.waitUntil(sendOutbox(env, r.id));
+    await env.DB.batch([
+      env.DB.prepare(
+        "UPDATE booking_requests SET name=NULL,phone=NULL,email=NULL,delivery_address=NULL,anonymized_at=datetime('now') WHERE anonymized_at IS NULL AND event_date < date('now','-12 months')",
+      ),
+      env.DB.prepare(
+        "DELETE FROM contact_messages WHERE created_at < datetime('now','-12 months')",
+      ),
+      env.DB.prepare(
+        "UPDATE notification_outbox SET html='',text='',subject='',reply_to=NULL WHERE status='sent' AND sent_at < datetime('now','-30 days')",
+      ),
+      env.DB.prepare("DELETE FROM rate_limits WHERE window_start < datetime('now','-2 hours')"),
+    ]);
+  },
+};

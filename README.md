@@ -16,7 +16,7 @@ All deployed files are flat inside `public/`:
 - `_headers`: security headers and admin noindex/no-store.
 - `_redirects`: maps `/` to `index.html` while keeping explicit `.html` page routes.
 
-Root files: `wrangler.jsonc` deploy configuration, `test-api.mjs` API checks, and product/design notes. Existing reference documents at repository root are **not** included in deployed assets. Never change the assets directory to the repository root.
+Root files: `wrangler.jsonc` deploy configuration, `test-api.mjs` three-route GET smoke test, and product/design notes. Existing reference documents at repository root are **not** included in deployed assets. Never change the assets directory to the repository root.
 
 ## Run locally
 
@@ -29,7 +29,7 @@ Open http://localhost:8080/index.html and http://localhost:8080/admin.html in th
 Run checks with Node 20+:
 
 ```sh
-node test-api.mjs
+npm run test:smoke
 ```
 
 ## GitHub Pages frontend preview
@@ -67,7 +67,7 @@ All data functions return Promises and reject on failure (human-readable `Error.
 | `listBookingRequests()` | None | `BookingRequest[]` for admin |
 | `setBookingStatus(id, status)` | Request ID, `"confirmed"` or `"declined"` | Updated `BookingRequest`; confirmation blocks that unit/date |
 | `saveUnit(unit)` | `Unit` without ID for creation; with ID for update | Saved `Unit` |
-| `deleteUnit(id)` | Unit ID | `{ "deleted": true }`; rejects when pending/confirmed requests exist |
+| `deleteUnit(id)` | Unit ID | `{ "deleted": true }`; rejects for pending/confirmed requests dated today or later in America/New_York |
 | `blockDate(unitId, date)` | Unit ID and date string | `{ "unit_id": string, "date": string, "blocked": true }` |
 | `unblockDate(unitId, date)` | Unit ID and date string | Same shape with `blocked: false`; rejects for confirmed rentals |
 | `sendContactMessage(input)` | `{ name: string, email: string, message: string }` | `{ id: string, status: "received" }`; future stub route `POST /api/contact` |
@@ -163,13 +163,34 @@ Validate customer input server-side, protect admin endpoints with Access, and us
 - One unit per request; rental price covers the requested date. Duration/times are not supplied.
 - A request remains pending until a human confirms; confirmation does not send notifications in this frontend demo.
 - Cash or check only. Deposit toggle enables a notice, never online collection.
-- Unit removal is conservatively blocked for pending or confirmed requests to preserve their history.
+- Unit removal is a soft delete, blocked only for pending or confirmed requests with an event date of today or later in America/New_York. Past requests retain their unit name and price snapshots. Removal deletes unit photo rows, matching R2 objects, and manual blocks.
 - The palette is provisional; edit variables at the top of `styles.css`. System fonts satisfy the no-unnecessary-font-dependencies requirement.
-- All inventory, prices, photos, review text, owner story, and policies are visibly marked sample/placeholder. Replace and approve before launch.
+- Public copy comes from the sources listed under “Content sources” below. Catalog prices still need owner approval before launch.
 - Open Graph assumes the existing `allaboutthatbounceky.net` domain from supplied notes; change the absolute `og:image` URL on each HTML page if the final domain changes. `share.png` is a local 1200×630 placeholder image.
-- Only “serves the La Grange, Kentucky area” is used for company geography. No private origin or business street address is in deployed code or metadata.
+- Company geography is limited to the five served counties (see “Content sources”). No private origin or business street address is in deployed code or metadata.
 - Public demo banners must be replaced with truthful live messages only when the real API and notifications exist.
 
-## Verification performed
+## Content sources
 
-API checks passed. Headless Chromium checks passed for all five routes at 360px with no horizontal overflow or JavaScript errors; booking → pending request → admin confirmation → unavailable date; 15/16/20-mile fee examples; outside-area submission blocking; inventory CRUD; manual blocking/unblocking; contact validation and demo save. Mobile route screenshots and a desktop homepage screenshot were inspected. These checks verify the browser-local demo, not a future Worker/D1 implementation or production deployment.
+- **Reference capture.** Business facts, policies, and catalog details come from the previous public site, captured on 2026-10-15 into `aatb-website-reference/`. That folder stays untracked and outside `public/`; never commit or deploy it. Policy copy follows that site's FAQ.
+- **Contact.** `allaboutthatbounce7596@gmail.com` is the canonical email everywhere, with phone 502-851-7596 and the Facebook page `Allaboutthatbounceky`. Older addresses from the previous site are retired; do not reintroduce them.
+- **Service area.** Oldham, Shelby, Henry, Trimble, and Jefferson counties (La Grange, Shelbyville). Grayson County and Leitchfield are intentionally excluded until the business is ready to serve them.
+- **Catalog seed.** `seeds/seed_catalog_review.sql` is review-only: its prices and specs await owner confirmation and it is never applied by migrations or tests.
+
+## Historical frontend demo verification
+
+The original frontend demo checks passed. Headless Chromium checks passed for all five routes at 360px with no horizontal overflow or JavaScript errors; booking → pending request → admin confirmation → unavailable date; 15/16/20-mile fee examples; outside-area submission blocking; inventory CRUD; manual blocking/unblocking; contact validation and demo save. Mobile route screenshots and a desktop homepage screenshot were inspected. These checks verify the browser-local demo, not a future Worker/D1 implementation or production deployment.
+
+## Automated checks
+
+Run `npm ci`, `npm run format:check`, and `npm test`. The test command runs both the Worker integration suite and the frontend/email regressions. These same checks run in `.github/workflows/tests.yml` for pull requests to `backend-worker` and `main`; a successful Cloudflare Pages deployment alone is not a passing test run.
+
+`npm run test:worker` runs the unit and D1/R2 integration coverage in Vitest with Miniflare. `vitest.config.mjs` loads `wrangler.jsonc`, supplies fake values for every variable and secret, and exposes only numbered files from `migrations/` to `readD1Migrations`. Setup applies them using `applyD1Migrations`; it never reads or loads `seed_sample.sql`. Each test receives isolated D1 and R2 storage.
+
+Outbound requests are intercepted with `fetchMock` from `cloudflare:test`, with `disableNetConnect` enabled. Turnstile, Resend, Google Routes, and Access certificates use mocks. Access JWTs are signed with an RSA key generated in test setup. The suite checks responses and stored data, including decision races and rollback.
+
+`npm run test:frontend` uses Node’s test runner and jsdom to load the actual HTML and ES modules. It exercises photo rendering, admin save/remove payloads, queued-notification copy, special-arrangements copy, and HTML fallback failures. It also checks customer email logistics, escaping, and subjects. It does not verify visual layout in a browser.
+
+`npm run test:smoke` checks only the three public GET routes against a running `wrangler dev` server, or the origin set in `API_BASE_URL`. It is a smoke test, not contract verification. These tests do not verify real provider credentials or services. See `BACKEND.md` for Worker deployment and the distinction between a static Pages preview and the running backend.
+
+The compatible test pool retains the requested `fetchMock` API. Its installed workerd supports compatibility dates through 2025-09-06, so the local test run falls back from the configured 2026-10-14 date. The suite adds `nodejs_compat` only for the test harness. Production compatibility-date behavior is not verified. An existing `public/_redirects` rule also produces an ignored redirect-loop warning; it was left unchanged. See `TEST-RESULTS.md` for the complete captured test output and verification limits.

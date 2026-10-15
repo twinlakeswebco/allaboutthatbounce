@@ -1,3 +1,6 @@
 .wrangler/
 node_modules/
 .impeccable/review/
+
+*.pdf
+private/

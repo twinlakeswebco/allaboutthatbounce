@@ -1,0 +1,75 @@
+import { fail } from "./validation.js";
+let certCache = { at: 0, keys: null };
+const td = new TextDecoder();
+const b64 = (s) =>
+  Uint8Array.from(
+    atob(
+      s
+        .replace(/-/g, "+")
+        .replace(/_/g, "/")
+        .padEnd(Math.ceil(s.length / 4) * 4, "="),
+    ),
+    (c) => c.charCodeAt(0),
+  );
+async function keys(env) {
+  if (certCache.keys && Date.now() - certCache.at < 3600000) return certCache.keys;
+  const r = await fetch(`https://${env.ACCESS_TEAM_DOMAIN}/cdn-cgi/access/certs`);
+  if (!r.ok) throw new Error("certs");
+  const j = await r.json();
+  certCache = { at: Date.now(), keys: j.keys || [] };
+  return certCache.keys;
+}
+export async function verifyAdmin(req, env) {
+  const host = new URL(req.url).hostname;
+  if (host === "localhost" && env.DEV_ADMIN_EMAIL) return { email: env.DEV_ADMIN_EMAIL };
+  const token = req.headers.get("Cf-Access-Jwt-Assertion");
+  if (!token) return { error: fail("Authentication required.", 401) };
+  try {
+    const [h, p, s] = token.split("."),
+      header = JSON.parse(td.decode(b64(h))),
+      claims = JSON.parse(td.decode(b64(p)));
+    if (header.alg !== "RS256") throw 0;
+    const jwk = (await keys(env)).find((k) => k.kid === header.kid);
+    if (!jwk) throw 0;
+    const key = await crypto.subtle.importKey(
+      "jwk",
+      jwk,
+      { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+      false,
+      ["verify"],
+    );
+    if (
+      !(await crypto.subtle.verify(
+        "RSASSA-PKCS1-v1_5",
+        key,
+        b64(s),
+        new TextEncoder().encode(`${h}.${p}`),
+      ))
+    )
+      throw 0;
+    const now = Math.floor(Date.now() / 1000),
+      issuer = `https://${env.ACCESS_TEAM_DOMAIN}`;
+    if (
+      claims.exp <= now ||
+      claims.iss !== issuer ||
+      !(Array.isArray(claims.aud) ? claims.aud : [claims.aud]).includes(env.ACCESS_AUD)
+    )
+      throw 0;
+    const email = String(claims.email || "").toLowerCase();
+    const allowed = String(env.ADMIN_EMAILS || "")
+      .split(",")
+      .map((x) => x.trim().toLowerCase())
+      .filter(Boolean);
+    if (!allowed.includes(email)) return { error: fail("Access denied.", 403) };
+    return { email };
+  } catch {
+    return { error: fail("Authentication required.", 401) };
+  }
+}
+export function adminWriteGuard(req, env) {
+  if (!["POST", "PUT", "DELETE"].includes(req.method)) return null;
+  if (!(req.headers.get("content-type") || "").toLowerCase().startsWith("application/json"))
+    return fail("Content-Type must be application/json.", 415);
+  if (req.headers.get("origin") !== env.SITE_ORIGIN) return fail("Invalid request origin.", 403);
+  return null;
+}
