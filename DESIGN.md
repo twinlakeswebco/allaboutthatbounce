@@ -1,6 +1,6 @@
 ---
 name: All About That Bounce
-description: Playful, saturated, bubbly and clean frontend demo.
+description: Playful, saturated, bubbly and clean rental application.
 colors:
   ink: "#252047"
   paper: "#fffdf5"
@@ -124,7 +124,7 @@ components:
 
 The Party Invitation is the working metaphor for this playful, saturated, bubbly and clean system. Bold rounded-feeling system type, pill actions, warm paper, purple emphasis, yellow bands and aqua artwork framing carry the invitation into a readable request flow and simple owner tools.
 
-This is a source-derived record of the scoped frontend demo, sampled from public/styles.css and public/index.html, public/book.html and public/admin.html. Purple, yellow and aqua remain provisional brand choices; the logo, artwork, inventory and reviews contain explicit placeholders. Source review was followed by scoped visual and functional demo verification: five public routes at 360px had no overflow or page errors, mobile route screenshots and desktop Home were inspected, and the demo was approved to ship after two spacing fixes. This evidence covers the reviewed demo surfaces, not production readiness or every device and state.
+This design record began with the scoped frontend demo, sampled from public/styles.css and public/index.html, public/book.html and public/admin.html. Purple, yellow and aqua remain provisional brand choices; the working logo, artwork and palette remain provisional, and catalog details require owner approval. Source review was followed by scoped visual and functional demo verification: five public routes at 360px had no overflow or page errors, mobile route screenshots and desktop Home were inspected, and the demo was approved to ship after two spacing fixes. This evidence covers the reviewed demo surfaces, not production readiness or every device and state.
 
 **Key Characteristics:**
 
@@ -227,3 +227,7 @@ The seven-column calendar uses 4px gaps, soft day buttons, purple selected dates
 - Don't add unnecessary third-party fonts or scripts.
 - Don't extend scoped demo verification into claims of production readiness or exhaustive device coverage.
 - Don't treat the provisional palette or placeholder logo as approved final identity.
+
+## Current Application Context
+
+The frontend now calls the Cloudflare Worker API through `public/api.js`; requests and inventory persist in D1, and unit photos use R2. The owner dashboard is protected by Cloudflare Access. Historical visual checks above describe the original demo and do not verify current production interactions. See `TEST-RESULTS.md` for current automated and live checks. Do not reintroduce localStorage/demo-success copy. Owner approval of the working logo and palette remains pending.

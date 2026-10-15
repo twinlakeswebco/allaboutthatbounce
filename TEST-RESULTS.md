@@ -1,183 +1,61 @@
-# Backend branch verification
+# Verification results
 
-PR #1 remains open and unmerged. This report covers local verification of the requested changes; it does not establish production readiness.
+Verified October 15, 2026 on revision `a7d1b2efc9a245a0a424fa485895efdb021ebb10` (merged PR #15). PRs #1–#15 are merged. These results distinguish automated coverage from the production checks actually performed.
 
-## Commits and per-step tests
+## Automated checks
 
-A preliminary commit removes the PDF from the index and ignores PDFs and `private/`; no history rewrite was performed. Six separate commits implement the six requested steps.
-
-| Checkpoint | Result |
+| Check | Result |
 | --- | --- |
-| Before step 1 | 4 passed, 0 failed |
-| Step 1: formatting | 4 passed, 0 failed |
-| Step 2: conditional outbox | 4 passed, 0 failed |
-| Step 3: cent validation and arithmetic | 14 passed, 0 failed |
-| Step 4: unit deletion | 14 passed, 0 failed |
-| Step 5: Turnstile reset | 14 passed, 0 failed |
-| Step 6: complete Vitest suite | 84 passed, 0 failed; 2 test files |
+| `npm ci` | Passed; lockfile unchanged |
+| `npm run format:check` | Passed |
+| `npm test` — Worker suite | 94 passed across 2 files |
+| `npm test` — frontend/email suite | 13 passed |
+| `npx wrangler deploy --dry-run` | Passed |
+| `git diff --exit-code` before deployment | Passed |
 
-The original tests are retained in Vitest. Formatting checks and `git diff --check` pass. The formatting-only step was checked with a parsed HTML comparison of `book.html` and `contact.html`: visible text, tag sequence, and attributes were identical after normalizing void-tag spelling and inline CSS whitespace. No behavior changes were included in that commit.
+Worker tests apply `migrations/0001_init.sql` and `0002_decision_token.sql` to isolated local Miniflare D1 storage. No seed file is applied. Test R2 is local. Every variable/secret is overridden with fake data, and outbound Turnstile, Google Routes, Resend and Access-certificate calls use `fetchMock`; unmocked outbound Worker requests are disabled.
 
-## Migrations
+Coverage includes delivery boundaries and integer-cent arithmetic; quote caching and provider failures; booking validation, rate limits, idempotency and server totals; confirmation races and rollback; Access JWT validation, allowlists and write guards; notification outbox and retries; soft deletion and photo cleanup; upload magic bytes/size limits; blocked dates; and retention. The frontend/email regressions load actual page modules in jsdom and check photos, admin payloads, error handling, queued-notification copy and email escaping/logistics. They do not establish visual layout correctness.
 
-- `migrations/0001_init.sql`
-- `migrations/0002_decision_token.sql`
+## Production deployment and checks
 
-`migrations/seed_sample.sql` is a sample inventory seed, not an applied test migration. The test config presents only numbered migration files to `readD1Migrations`; setup applies them using `applyD1Migrations`. Neither the automated suite nor the local smoke database loaded the seed.
+After explicit approval, `npx wrangler deploy` deployed revision `a7d1b2e` to `aatbky.us` in business account `714af045eb67c3d815a7f9551b61d21b`.
 
-## Verified
+Worker version: `a158beed-632e-4a4a-a565-3802a0b3eb63`. Assets uploaded from `public/` only. The 15-minute scheduled trigger remains configured. No remote D1 command, migration or seed was run during deployment. Subsequently, the explicitly approved read-only migration-status check reported “No migrations to apply!” in the business account.
 
-The suite checks HTTP results and relevant D1/R2 state for fee boundaries and rates, Google delivery quotes/cache/error handling and fake secret usage, booking validation/server totals/rate limits, idempotency, normal and blocked decisions, same-date and same-request races, unique-constraint rollback, all eight supported admin route/method combinations without a token, signed Access token validation and write guards, failed email retries and the five-attempt limit, confirmed-date unblock protection, past/today/future deletion rules, photo validation and orphan removal, and retention. The NaN case is asserted directly against validation; its HTTP JSON serialization becomes null and is also rejected.
+| Production check | Observed result |
+| --- | --- |
+| `GET /about` | 200; heading “Meet the Arnolds.” and Matthew/Rena copy |
+| `GET /api/units` | 200 JSON array, empty |
+| `GET /api/settings` | 200 JSON: 15 free miles, $0.35/mile, multiplier 4, no maximum |
+| `GET /api/units/:id/blocked-dates` | 200 JSON array via existing smoke test with a missing-unit ID |
+| Unauthenticated `GET /admin.html` | 302 to the configured Cloudflare Access team hostname |
+| Unauthenticated `GET /api/admin/units` | 302 to the same Access team hostname |
+| Production Turnstile widget | Configured in the business account for `aatbky.us`, managed mode |
+| `wrangler secret list` | All five names present after the account holder added `RESEND_API_KEY`; values not read |
+| Resend sending domain | `aatbky.us` verified; all three approved DKIM/sending DNS records verified, receiving disabled |
+| Live delivery quote | 200 with a valid quote for the public locality La Grange, KY; no private customer address used |
 
-All secrets and variables in tests have fake bindings. RSA keys are generated locally for signed JWT tests. Turnstile, Resend, Google Routes, and Access certificates are intercepted by `fetchMock`; `disableNetConnect` prevents real outbound fetches, with an explicit rejection test for an unmocked host. No real addresses or personal details are used as fixtures.
+The GET-only smoke test passed before and after deployment. It checks response shapes for units, settings and blocked dates; an empty inventory exercises the third route using a missing-unit ID. This is not an end-to-end booking or a complete API contract test. Secret names establish presence only, not correct values, restrictions or provider operation.
 
-The GET-only smoke test passed against a running local Wrangler server initialized with the two numbered migrations. It checks `/api/units`, `/api/settings`, and `/api/units/:id/blocked-dates`; an empty inventory still exercises the third route. It is a smoke test, not contract verification.
+## Remaining verification and limitations
 
-## Not verified and warnings
+- The installed test workerd supports compatibility dates only through 2025-09-06 and falls back from production's 2026-10-14 setting. Production compatibility-date behavior is not covered by this runtime. Test-only `nodejs_compat` enables the harness.
+- `npm ci` reports dependency advisories (1 moderate, 5 high, 2 critical) and deprecation of `@cloudflare/vitest-pool-workers`. No automatic/breaking dependency fix was applied as part of the About deployment.
+- The account holder added `RESEND_API_KEY`, and the sending domain is verified. The deployed `FROM_EMAIL` remains a placeholder pending PR #18 and deployment approval. Delivery to both owner and customer is still unverified.
+- Production secret values, Google API restrictions, a live Turnstile token, R2 upload/retrieval and a complete booking have not been verified. A valid locality-level delivery quote confirms the routing flow works but does not establish address-level accuracy or key restrictions.
+- The approved remote migration-status check reported no pending numbered migrations. No migration or seed was applied. This does not prove real provider operation.
+- The catalog remains empty, pending owner approval of listings, prices, specifications, configurations and photos. Review/sample seeds have not been run remotely.
+- No new mobile/desktop visual or interactive browser regression was performed in this check. Historical demo browser evidence is not evidence of current production booking readiness.
 
-- No production deployment, live D1/R2 resources, credentials, provider delivery, or Cloudflare Access/Turnstile configuration was verified.
-- The compatible `@cloudflare/vitest-pool-workers` version retains `fetchMock`; its installed runtime supports compatibility dates through 2025-09-06 and falls back from the Wrangler date 2026-10-14. Full production compatibility-date behavior is not verified. Test-only `nodejs_compat` is enabled for the harness.
-- The quote failure test uses a mocked provider 500 returning 503 without a guessed distance; a real elapsed provider timeout was not separately exercised.
-- No new browser interaction or live Turnstile token test was run. The frontend changes are limited to the two `finally` resets.
-- Wrangler/Miniflare warns about the existing ignored redirect-loop rule in `public/_redirects`; no redirect behavior was changed.
-- A default Wrangler launch hit the environment's network-interface restriction. Explicit loopback binding and a disabled inspector allowed startup. The server and smoke client ran within the same isolated execution environment to avoid cross-process network namespace restrictions.
-- Repository history cleanup remains separate. The restricted PDF was not opened or read.
+## Historical context
 
-No application behavior was changed beyond the requested outbox, fee, deletion, and Turnstile changes. The additional changes are the requested repository exclusions, formatting, migration, development dependencies, tests, smoke-test labeling, and documentation.
+The initial backend report recorded 84 Worker tests and an open PR #1. Those are historical results; current results above replace that status. The former `public/_redirects` rule (`/ /index.html 200`) was removed in merged PR #13 because Cloudflare rejected the loop. Static asset HTML handling now serves `/`; the removed redirect warning is not an outstanding issue.
 
-## Full Vitest output
+## Separate follow-up pull requests
 
-Command: `npm test`
+- PR #17 corrects canonical/social URLs, replaces the share image, adds Instagram to all footers, and confirms Rena as direct contact. All 13 frontend/email regressions passed; the About page was visually checked at 1280px and 360px with no horizontal overflow, and all page metadata/footer links were checked.
+- PR #18 configures the verified sender and Reply-To routing. All 94 Worker and 15 frontend/email tests passed with mocked providers, including the two new reply-routing regressions; deployment dry run passed.
+- PR #19 upgrades the test pool to 0.12.21 while retaining `fetchMock`. All 94 Worker and 13 frontend/email tests passed on that branch. Runtime support improves to 2026-03-10 but still falls back from production’s date; the current major plugin removes `fetchMock`. Dependency advisories remain.
 
-```text
-npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
-
-> test
-> vitest run --reporter=verbose
-
-Proxy environment variables detected. We'll use your proxy for fetch requests.
-
- RUN  v3.2.7 /workspace/scratch/a163b3e8de43/repo
-
-[vpw:info] Starting isolated runtimes for vitest.config.mjs...
-[mf:warn] The latest compatibility date supported by the installed Cloudflare Workers Runtime is "2025-09-06",
-but you've requested "2026-10-14". Falling back to "2025-09-06"...
-[mf:warn] The latest compatibility date supported by the installed Cloudflare Workers Runtime is "2025-09-06",
-but you've requested "2026-10-14". Falling back to "2025-09-06"...
-[mf:warn] Found 1 invalid redirect rule:
-▶︎ Infinite loop detected in this rule and has been ignored. This will cause a redirect to strip `.html` or `/index` and end up triggering this rule again. Please fix or remove this rule to silence this warning.
-    at public/_redirects:1 | / /index.html 200
-
-
-[mf:warn] Found 1 invalid redirect rule:
-▶︎ Infinite loop detected in this rule and has been ignored. This will cause a redirect to strip `.html` or `/index` and end up triggering this rule again. Please fix or remove this rule to silence this warning.
-    at public/_redirects:1 | / /index.html 200
-
-
- ✓ tests/worker.test.mjs > fee route at 15 miles returns 0 27ms
- ✓ tests/backend.test.mjs > delivery fee examples and boundary 15ms
- ✓ tests/backend.test.mjs > maximum delivery distance 11ms
- ✓ tests/backend.test.mjs > photo magic bytes reject fake image 12ms
- ✓ tests/backend.test.mjs > distance quote object cannot expose origin 7ms
- ✓ tests/backend.test.mjs > fractional mile uses integer cents 12ms
- ✓ tests/backend.test.mjs > accept cent rate 0.29 12ms
- ✓ tests/backend.test.mjs > accept cent rate 0.07 9ms
- ✓ tests/backend.test.mjs > accept cent rate 0.57 8ms
- ✓ tests/backend.test.mjs > accept cent rate 0.58 9ms
- ✓ tests/worker.test.mjs > fee route at 16 miles returns 22.4 19ms
- ✓ tests/worker.test.mjs > fee route at 20 miles returns 28 14ms
- ✓ tests/worker.test.mjs > fee route at 15.1 miles returns 21.14 17ms
- ✓ tests/worker.test.mjs > maximum distance takes precedence even inside free radius 21ms
- ✓ tests/worker.test.mjs > settings accepts 0.29 and stores integer cents 15ms
- ✓ tests/worker.test.mjs > settings accepts 0.07 and stores integer cents 13ms
- ✓ tests/worker.test.mjs > settings accepts 0.57 and stores integer cents 13ms
- ✓ tests/backend.test.mjs > accept cent rate 0.55 11ms
- ✓ tests/backend.test.mjs > reject invalid rate 0.355 12ms
- ✓ tests/backend.test.mjs > reject invalid rate -1 7ms
- ✓ tests/backend.test.mjs > reject invalid rate NaN 10ms
- ✓ tests/backend.test.mjs > reject invalid rate 0.35 10ms
- ✓ tests/worker.test.mjs > settings accepts 0.58 and stores integer cents 12ms
- ✓ tests/worker.test.mjs > settings accepts 0.55 and stores integer cents 14ms
- ✓ tests/worker.test.mjs > settings rejects invalid 0.355 without mutation 17ms
- ✓ tests/worker.test.mjs > settings rejects invalid -1 without mutation 15ms
- ✓ tests/worker.test.mjs > settings rejects invalid NaN without mutation 12ms
- ✓ tests/worker.test.mjs > settings rejects invalid 0.35 without mutation 15ms
- ✓ tests/worker.test.mjs > Google quote uses secret binding, caches response, and never exposes origin 16ms
- ✓ tests/worker.test.mjs > unresolvable address returns 422 and no cache entry 9ms
- ✓ tests/worker.test.mjs > Google 500 returns 503 without guessed distance or cache entry 10ms
- ✓ tests/worker.test.mjs > booking happy path recomputes total and queues two distinct emails 31ms
- ✓ tests/worker.test.mjs > booking rejects past date and creates no booking or email 9ms
- ✓ tests/worker.test.mjs > booking rejects missing Turnstile and creates no booking or email 10ms
- ✓ tests/worker.test.mjs > booking rejects failed Turnstile and creates no booking or email 10ms
- ✓ tests/worker.test.mjs > booking rejects honeypot and creates no booking or email 9ms
- ✓ tests/worker.test.mjs > booking rejects manual block without adding a request or email 12ms
- ✓ tests/worker.test.mjs > booking rejects confirmed date without adding a request or email 14ms
- ✓ tests/worker.test.mjs > booking rejects outside area and retains only quote cache 16ms
- ✓ tests/worker.test.mjs > eleventh booking in an hour from the same IP is rejected 90ms
- ✓ tests/worker.test.mjs > idempotent replay returns same row without duplicate email 24ms
- ✓ tests/worker.test.mjs > idempotency key with another email returns 409 without mutation 20ms
- ✓ tests/worker.test.mjs > normal confirmation queues exactly one confirmation email 14ms
- ✓ tests/worker.test.mjs > manual-block confirmation regression returns 409 and leaves no retryable email 14ms
- ✓ tests/worker.test.mjs > racing confirmations yield one 200, one 409 and one email with losing batch rolled back 18ms
- ✓ tests/worker.test.mjs > unique-violation decision rolls back token, status and outbox insert 20ms
- ✓ tests/worker.test.mjs > repeating confirmed on decided request returns 409 without another email 15ms
- ✓ tests/worker.test.mjs > repeating declined on decided request returns 409 without another email 18ms
- ✓ tests/worker.test.mjs > decline queues only decline email 25ms
- ✓ tests/worker.test.mjs > Access denies no token: PUT /api/admin/settings 19ms
- ✓ tests/worker.test.mjs > Access denies no token: GET /api/admin/booking-requests 16ms
- ✓ tests/worker.test.mjs > Access denies no token: POST /api/admin/booking-requests/test-request/status 17ms
- ✓ tests/worker.test.mjs > Access denies no token: POST /api/admin/units 14ms
- ✓ tests/worker.test.mjs > Access denies no token: PUT /api/admin/units/test-unit 11ms
- ✓ tests/worker.test.mjs > Access denies no token: DELETE /api/admin/units/test-unit 13ms
- ✓ tests/worker.test.mjs > Access denies no token: PUT /api/admin/units/test-unit/blocked-dates/2099-06-15 13ms
- ✓ tests/worker.test.mjs > Access denies no token: DELETE /api/admin/units/test-unit/blocked-dates/2099-06-15 16ms
- ✓ tests/worker.test.mjs > Access rejects expired with 401 and unchanged database 15ms
- ✓ tests/worker.test.mjs > Access rejects wrong issuer with 401 and unchanged database 19ms
- ✓ tests/worker.test.mjs > Access rejects wrong audience with 401 and unchanged database 16ms
- ✓ tests/worker.test.mjs > Access rejects tampered signature with 401 and unchanged database 16ms
- ✓ tests/worker.test.mjs > Access rejects alg none with 401 and unchanged database 17ms
- ✓ tests/worker.test.mjs > Access rejects unknown kid with 401 and unchanged database 19ms
- ✓ tests/worker.test.mjs > valid disallowed email returns 403 15ms
- ✓ tests/worker.test.mjs > valid allowed Access token returns stored requests 19ms
- ✓ tests/worker.test.mjs > admin write rejects mismatched Origin 15ms
- ✓ tests/worker.test.mjs > admin write rejects wrong content type 13ms
- ✓ tests/worker.test.mjs > DEV_ADMIN_EMAIL never bypasses Access on non-localhost 13ms
- ✓ tests/worker.test.mjs > Resend failure preserves 201 booking; scheduled retry sends failed rows 21ms
- ✓ tests/worker.test.mjs > outbox stops retrying after five attempts 36ms
- ✓ tests/worker.test.mjs > unblocking confirmed rental returns 409 and keeps block 15ms
- ✓ tests/worker.test.mjs > past pending permits soft delete with R2, photo and block cleanup 31ms
- ✓ tests/worker.test.mjs > 2099-06-15 pending blocks deletion without mutation 25ms
- ✓ tests/worker.test.mjs > today pending blocks deletion without mutation 16ms
- ✓ tests/worker.test.mjs > past confirmed permits soft delete with R2, photo and block cleanup 25ms
- ✓ tests/worker.test.mjs > 2099-06-15 confirmed blocks deletion without mutation 18ms
- ✓ tests/worker.test.mjs > today confirmed blocks deletion without mutation 16ms
- ✓ tests/worker.test.mjs > photo upload rejects wrong PNG magic and stores no photo or R2 object 12ms
- ✓ tests/worker.test.mjs > photo upload rejects more than five photos and stores no photo or R2 object 11ms
- ✓ tests/worker.test.mjs > photo upload rejects over 1 MB and stores no photo or R2 object 102ms
- ✓ tests/worker.test.mjs > valid tiny PNG is accepted; replacement deletes orphaned R2 object 24ms
- ✓ tests/worker.test.mjs > scheduled retention anonymizes old bookings and deletes old messages and stale IP buckets 13ms
- ✓ tests/worker.test.mjs > outbound networking is disabled for unmocked hosts 9ms
- ✓ tests/worker.test.mjs > racing decisions on one pending request queue only the winning email 15ms
-
- Test Files  2 passed (2)
-      Tests  84 passed (84)
-   Start at  16:35:10
-   Duration  2.41s (transform 63ms, setup 177ms, collect 75ms, tests 1.62s, environment 1ms, prepare 371ms)
-
-[vpw:debug] Shutting down runtimes...
-```
-
-## Full passing smoke-test output
-
-Server: `npx wrangler dev --local --ip 127.0.0.1 --port 8787 --inspector-port 0`
-
-Client: `API_BASE_URL=http://127.0.0.1:8787 npm run test:smoke`
-
-```text
-
-> test:smoke
-> node test-api.mjs
-
-API smoke test passed: three GET routes against http://127.0.0.1:8787.
-npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
-```
+None of these PRs has been merged or deployed as part of this report. Catalog entry and a full booking/email test are deferred. Merged branch cleanup verified every old tip as an ancestor of main before removing 23 local and 15 remote branches; linked worktree files were retained.
