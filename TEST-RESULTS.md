@@ -21,7 +21,7 @@ Coverage includes delivery boundaries and integer-cent arithmetic; quote caching
 
 After explicit approval, `npx wrangler deploy` deployed revision `a7d1b2e` to `aatbky.us` in business account `714af045eb67c3d815a7f9551b61d21b`.
 
-Worker version: `a158beed-632e-4a4a-a565-3802a0b3eb63`. Assets uploaded from `public/` only. The 15-minute scheduled trigger remains configured. No remote D1 command, migration or seed was run during deployment.
+Worker version: `a158beed-632e-4a4a-a565-3802a0b3eb63`. Assets uploaded from `public/` only. The 15-minute scheduled trigger remains configured. No remote D1 command, migration or seed was run during deployment. Subsequently, the explicitly approved read-only migration-status check reported “No migrations to apply!” in the business account.
 
 | Production check | Observed result |
 | --- | --- |
@@ -42,7 +42,7 @@ The GET-only smoke test passed before and after deployment. It checks response s
 - `npm ci` reports dependency advisories (1 moderate, 5 high, 2 critical) and deprecation of `@cloudflare/vitest-pool-workers`. No automatic/breaking dependency fix was applied as part of the About deployment.
 - `RESEND_API_KEY` is missing and `FROM_EMAIL` remains a placeholder. Sending-domain verification and delivery to both owner and customer are pending.
 - Production secret values, Google API restrictions, real Routes requests, a live Turnstile token, R2 upload/retrieval and a complete booking have not been verified.
-- Remote D1 migration status has not been inspected; it requires explicit confirmation. Working public GET routes do not prove that every migration is applied.
+- The approved remote migration-status check reported no pending numbered migrations. No migration or seed was applied. This does not prove real provider operation.
 - The catalog remains empty, pending owner approval of listings, prices, specifications, configurations and photos. Review/sample seeds have not been run remotely.
 - No new mobile/desktop visual or interactive browser regression was performed in this check. Historical demo browser evidence is not evidence of current production booking readiness.
 

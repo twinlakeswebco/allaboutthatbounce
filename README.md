@@ -86,7 +86,7 @@ npx wrangler deploy
 
 Verify `/about` shows “Meet the Arnolds.”, run the production smoke test, and check unauthenticated `/admin.html` and `/api/admin/*` still redirect to Cloudflare Access. `workers_dev` and preview URLs remain disabled. `/` is served by static asset HTML handling; no `_redirects` rewrite is required.
 
-The existing GitHub Pages workflow publishes a static copy only. It cannot run the API and must not be presented as a functional booking preview. Its removal is pending a project decision. A functional preview requires a separate Worker and isolated data/services.
+The nonfunctional GitHub Pages preview workflow has been removed. GitHub Pages cannot run this API and must not be presented as a functional booking preview. A functional preview requires a separate Worker and isolated data/services. Removing the workflow does not itself unpublish any historical Pages deployment.
 
 ## API and business rules
 
@@ -121,4 +121,4 @@ Booking creation and decisions queue email in D1. The 15-minute cron retries pen
 
 On October 15, 2026, revision `a7d1b2e` was deployed and the About heading, public GET API and Access redirects were verified. The live catalog is empty. Four required secrets are present by name; `RESEND_API_KEY` is absent and `FROM_EMAIL` is still `bookings@example.com`. Real email delivery and an end-to-end booking are not verified. Do not describe the business as ready for online booking until setup and owner approvals are complete.
 
-The working logo and palette remain provisional. Canonical production is currently hosted at `aatbky.us`, while Open Graph metadata still points at the previous domain and uses a placeholder image. Owner confirmation is pending for direct contact with Matthew or Rena and adding Instagram to shared footers. See [PRODUCT.md](PRODUCT.md), [DESIGN.md](DESIGN.md) and [BACKEND.md](BACKEND.md).
+The working logo and palette remain provisional. Canonical production is currently hosted at `aatbky.us`, while Open Graph metadata still points at the previous domain and uses a placeholder image. Rena is the direct customer contact. Adding Instagram to shared footers and using `aatbky.us` as the canonical domain are approved; the corresponding website changes are reviewed separately. See [PRODUCT.md](PRODUCT.md), [DESIGN.md](DESIGN.md) and [BACKEND.md](BACKEND.md).

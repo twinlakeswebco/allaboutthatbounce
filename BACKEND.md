@@ -8,7 +8,7 @@ Obtain explicit confirmation before deploying, merging a PR or running any remot
 
 Production is https://aatbky.us in business account `714af045eb67c3d815a7f9551b61d21b`, Worker `allaboutthatbounce`. `workers_dev` and preview URLs are disabled. After the approved October 15, 2026 deployment of `a7d1b2e`, `/about` shows “Meet the Arnolds.” Public GET smoke checks passed and unauthenticated admin page/API requests redirect to Access.
 
-`wrangler secret list` shows the origin, Google Maps, Turnstile and IP-hash secret names; it does not verify their values. `RESEND_API_KEY` is absent, and `FROM_EMAIL` is still a placeholder. The production Turnstile widget has `aatbky.us` configured. No remote D1 command has been run in this verification; migrations, real provider calls and an end-to-end booking remain unverified. See `TEST-RESULTS.md`.
+`wrangler secret list` shows the origin, Google Maps, Turnstile and IP-hash secret names; it does not verify their values. `RESEND_API_KEY` is absent, and `FROM_EMAIL` is still a placeholder. The production Turnstile widget has `aatbky.us` configured. The approved read-only remote migration-status check reported no pending migrations; none were applied. Real provider calls and an end-to-end booking remain unverified. See `TEST-RESULTS.md`.
 
 ## Cloudflare resources
 
@@ -90,7 +90,7 @@ Units are soft deleted. Pending or confirmed requests block removal only when th
 
 Against a running `wrangler dev` server, `npm run test:smoke` checks only `/api/units`, `/api/settings`, and `/api/units/:id/blocked-dates`. It is a smoke test, not contract verification. It does not replace the Vitest suite or verify production integrations.
 
-The compatible test pool retains the requested `fetchMock` API. Its installed workerd supports compatibility dates through 2025-09-06, so the local test run falls back from the configured 2026-10-14 date. The suite adds `nodejs_compat` only for the test harness. Production compatibility-date behavior is not verified. The former `public/_redirects` rule (`/ /index.html 200`) was removed because Cloudflare rejects it as a redirect loop at deploy; `html_handling: auto-trailing-slash` already serves `index.html` at `/`. See `TEST-RESULTS.md` for the complete captured test output and verification limits.
+The compatible test pool retains the requested `fetchMock` API. Its installed workerd supports compatibility dates through 2025-09-06, so the local test run falls back from the configured 2026-10-14 date. The suite adds `nodejs_compat` only for the test harness. Production compatibility-date behavior is not verified. The former `public/_redirects` rule (`/ /index.html 200`) was removed because Cloudflare rejects it as a redirect loop at deploy; `html_handling: auto-trailing-slash` already serves `index.html` at `/`. See `TEST-RESULTS.md` for current test counts, production checks and verification limits.
 
 ## Email completion and end-to-end verification
 
