@@ -14,7 +14,6 @@ All deployed files are flat inside `public/`:
 - `api.js`: the only data layer; replace its async implementations with HTTP requests.
 - `placeholder.svg`, `favicon.svg`, `share.svg`, `share.png`: lightweight local placeholder assets.
 - `_headers`: security headers and admin noindex/no-store.
-- `_redirects`: maps `/` to `index.html` while keeping explicit `.html` page routes.
 
 Root files: `wrangler.jsonc` deploy configuration, `test-api.mjs` three-route GET smoke test, and product/design notes. Existing reference documents at repository root are **not** included in deployed assets. Never change the assets directory to the repository root.
 
@@ -193,4 +192,4 @@ Outbound requests are intercepted with `fetchMock` from `cloudflare:test`, with 
 
 `npm run test:smoke` checks only the three public GET routes against a running `wrangler dev` server, or the origin set in `API_BASE_URL`. It is a smoke test, not contract verification. These tests do not verify real provider credentials or services. See `BACKEND.md` for Worker deployment and the distinction between a static Pages preview and the running backend.
 
-The compatible test pool retains the requested `fetchMock` API. Its installed workerd supports compatibility dates through 2025-09-06, so the local test run falls back from the configured 2026-10-14 date. The suite adds `nodejs_compat` only for the test harness. Production compatibility-date behavior is not verified. An existing `public/_redirects` rule also produces an ignored redirect-loop warning; it was left unchanged. See `TEST-RESULTS.md` for the complete captured test output and verification limits.
+The compatible test pool retains the requested `fetchMock` API. Its installed workerd supports compatibility dates through 2025-09-06, so the local test run falls back from the configured 2026-10-14 date. The suite adds `nodejs_compat` only for the test harness. Production compatibility-date behavior is not verified. The former `public/_redirects` rule (`/ /index.html 200`) was removed because Cloudflare rejects it as a redirect loop at deploy; `html_handling: auto-trailing-slash` already serves `index.html` at `/`. See `TEST-RESULTS.md` for the complete captured test output and verification limits.
