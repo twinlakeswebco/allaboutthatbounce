@@ -48,9 +48,8 @@ export function safePhoto(src) {
   return typeof src === "string" &&
     (src === "placeholder.svg" ||
       /^\/media\/[A-Za-z0-9_-]+$/.test(src) ||
-      /^data:image\/(jpeg|png|webp);base64,/.test(src) ||
-    (/^(placeholder\.svg|data:image\/(jpeg|png|webp);base64,)/.test(src) ||
       /^assets\/[a-zA-Z0-9_-]+\.(?:png|jpe?g|webp)$/.test(src) ||
+      /^data:image\/(jpeg|png|webp);base64,/.test(src) ||
       /^https:\/\//.test(src))
     ? src
     : "placeholder.svg";

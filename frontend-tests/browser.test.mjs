@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { test } from "node:test";
 import vm from "node:vm";
@@ -113,6 +113,26 @@ test("media allowlist rejects traversal, protocol-relative URLs and executable U
   ])
     assert.equal(p.exports.safePhoto(src), "placeholder.svg");
   assert.equal(p.exports.safePhoto(photo), photo);
+  assert.equal(p.exports.safePhoto("assets/castle1.jpg"), "assets/castle1.jpg");
+  assert.equal(p.exports.safePhoto("assets/../admin.html"), "placeholder.svg");
+});
+
+test("public pages have one logo link, one menu and unique element IDs", async () => {
+  for (const name of ["index", "about", "book", "contact", "admin"]) {
+    const dom = new JSDOM(await readFile(new URL(`${name}.html`, root), "utf8"));
+    try {
+      const document = dom.window.document;
+      assert.equal(document.querySelectorAll("#menu").length, 1, name);
+      assert.equal(document.querySelectorAll("header .brand").length, 1, name);
+      const logo = document.querySelector("header .brand img");
+      assert.equal(logo?.getAttribute("src"), "assets/aatb-logo-transparent.png", name);
+      await access(new URL(logo.getAttribute("src"), root));
+      const ids = Array.from(document.querySelectorAll("[id]"), (el) => el.id);
+      assert.equal(ids.length, new Set(ids).size, name);
+    } finally {
+      dom.window.close();
+    }
+  }
 });
 
 test("admin creates a unit without sending a placeholder as a photo", async (t) => {
