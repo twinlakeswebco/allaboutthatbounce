@@ -1,7 +1,13 @@
 {
   "name": "allaboutthatbounce",
   "main": "worker/index.js",
+  // Business account: owns aatbky.us, Access, Turnstile, D1 and R2.
+  "account_id": "714af045eb67c3d815a7f9551b61d21b",
   "compatibility_date": "2026-10-14",
+  // Serve only on the production domain; no unprotected workers.dev or preview hostnames.
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{ "pattern": "aatbky.us", "custom_domain": true }],
   "assets": {
     "binding": "ASSETS",
     "directory": "./public",
@@ -13,7 +19,7 @@
     {
       "binding": "DB",
       "database_name": "allaboutthatbounce",
-      "database_id": "87feba55-c816-4f50-8413-80773f2d718f",
+      "database_id": "bf86a18d-0ab6-485d-8c89-ffe91e1ff8c3",
     },
   ],
   "r2_buckets": [
@@ -28,10 +34,10 @@
   "vars": {
     "OWNER_EMAIL": "allaboutthatbounce7596@gmail.com",
     "FROM_EMAIL": "All About That Bounce <bookings@example.com>",
-    "SITE_ORIGIN": "https://example.com",
-    "ACCESS_TEAM_DOMAIN": "example.cloudflareaccess.com",
-    "ACCESS_AUD": "REPLACE_WITH_ACCESS_AUD",
-    "ADMIN_EMAILS": "owner@example.com",
-    "TURNSTILE_SITE_KEY": "REPLACE_WITH_TURNSTILE_SITE_KEY",
+    "SITE_ORIGIN": "https://aatbky.us",
+    "ACCESS_TEAM_DOMAIN": "broad-queen-dfdb.cloudflareaccess.com",
+    "ACCESS_AUD": "1b0279144afd6e2e49ab2c2b58a9f5d8c4db6c8d905778f19d34339a75b03027",
+    "ADMIN_EMAILS": "caseykeown@gmail.com,allaboutthatbounce7596@gmail.com",
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAFXbtM87KBurZyOK",
   },
 }

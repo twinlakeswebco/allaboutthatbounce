@@ -77,22 +77,31 @@ async function ipBucket(req, env, kind, limit) {
     .first();
   return row.count <= limit;
 }
-async function turnstile(req, env, token) {
-  if (!token) return false;
+async function turnstile(req, env, token, action) {
+  if (!token || typeof token !== "string" || token.length > 2048 || !env.TURNSTILE_SECRET)
+    return false;
   const f = new FormData();
   f.set("secret", env.TURNSTILE_SECRET);
   f.set("response", token);
+  // Lets a network retry reuse the same verification instead of failing as a duplicate.
+  f.set("idempotency_key", crypto.randomUUID());
   const ip = req.headers.get("CF-Connecting-IP");
   if (ip) f.set("remoteip", ip);
-  try {
-    const r = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-      method: "POST",
-      body: f,
-    });
-    return !!(await r.json()).success;
-  } catch {
-    return false;
+  let outcome;
+  for (let attempt = 0; attempt < 2 && !outcome; attempt++) {
+    try {
+      const r = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+        method: "POST",
+        body: f,
+      });
+      if (r.ok) outcome = await r.json();
+    } catch {}
   }
+  return (
+    outcome?.success === true &&
+    outcome.hostname === new URL(env.SITE_ORIGIN).hostname &&
+    outcome.action === action
+  );
 }
 async function listUnits(env) {
   const rows = await env.DB.prepare(
@@ -147,7 +156,7 @@ async function booking(req, env, ctx) {
     return fail("Too many booking requests. Please try again later.", 429);
   const x = await body(req);
   if (x?.website) return fail("Unable to submit request.", 400);
-  if (!(await turnstile(req, env, x?.turnstile_token)))
+  if (!(await turnstile(req, env, x?.turnstile_token, "booking")))
     return fail("Please complete the verification and try again.", 400);
   const err = bookingError(x);
   if (err) return fail(err);
@@ -235,7 +244,7 @@ async function contact(req, env, ctx) {
     return fail("Too many contact messages. Please try again later.", 429);
   const x = await body(req);
   if (x?.website) return fail("Unable to submit message.", 400);
-  if (!(await turnstile(req, env, x?.turnstile_token)))
+  if (!(await turnstile(req, env, x?.turnstile_token, "contact")))
     return fail("Please complete the verification and try again.", 400);
   if (
     !x?.name?.trim() ||
@@ -430,7 +439,7 @@ async function route(req, env, ctx) {
   if (req.method === "POST" && p === "/api/delivery-quote") return quoteRoute(req, env);
   if (req.method === "POST" && p === "/api/booking-requests") return booking(req, env, ctx);
   if (req.method === "POST" && p === "/api/contact") return contact(req, env, ctx);
-  if (!p.startsWith("/api/admin/")) return fail("Not found.", 404);
+  if (p !== "/api/admin" && !p.startsWith("/api/admin/")) return fail("Not found.", 404);
   const auth = await verifyAdmin(req, env);
   if (auth.error) return auth.error;
   const guard = adminWriteGuard(req, env);

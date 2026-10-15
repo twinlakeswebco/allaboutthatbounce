@@ -114,6 +114,8 @@ export function outboxStatement(env, m, decision = null) {
   ).bind(m.id, m.kind, m.to_email, m.reply_to, m.subject, m.html, m.text);
 }
 export async function sendOutbox(env, id, sender = sendResend) {
+  // Until email delivery is configured, leave rows pending so no retry attempts are spent.
+  if (sender === sendResend && !env.RESEND_API_KEY) return;
   const m = await env.DB.prepare(
     "SELECT * FROM notification_outbox WHERE id=? AND status!='sent' AND attempts<5",
   )

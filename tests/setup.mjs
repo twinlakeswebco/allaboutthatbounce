@@ -68,10 +68,21 @@ beforeAll(async () => {
   fetchMock
     .get("https://challenges.cloudflare.com")
     .intercept({ path: "/turnstile/v0/siteverify", method: "POST" })
-    .reply((request) => ({
-      statusCode: 200,
-      data: JSON.stringify({ success: !String(request.body).includes("failed-token") }),
-    }))
+    .reply((request) => {
+      const body = String(request.body);
+      const replay = body.includes("used-token");
+      return {
+        statusCode: 200,
+        data: JSON.stringify({
+          success: !body.includes("failed-token") && !replay,
+          ...(replay ? { "error-codes": ["timeout-or-duplicate"] } : {}),
+          hostname: body.includes("wrong-host-token")
+            ? "other.example"
+            : new URL(env.SITE_ORIGIN).hostname,
+          action: body.includes("contact-token") ? "contact" : "booking",
+        }),
+      };
+    })
     .persist();
   fetchMock
     .get("https://api.resend.com")
