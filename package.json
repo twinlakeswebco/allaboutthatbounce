@@ -10,7 +10,7 @@
     "test:frontend": "node --experimental-vm-modules --test frontend-tests/*.test.mjs"
   },
   "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "^0.8.71",
+    "@cloudflare/vitest-pool-workers": "^0.12.21",
     "jsdom": "^26.1.0",
     "prettier": "^3.9.10",
     "vitest": "~3.2.0"
