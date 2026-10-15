@@ -4,17 +4,67 @@ export const defaultSettings = {
   trip_multiplier: 4,
   max_delivery_miles: null,
 };
-async function request(path, options = {}) {
-  const unavailable = "This service is unavailable right now. Please call 502-851-7596 for help.";
-  let r;
+const seeds = [
+  {
+    id: "rainbow",
+    name: "Rainbow Bounce",
+    description:
+      "A colorful classic for a day of jumping. Placeholder inventory.",
+    size: "15 × 15 ft · capacity pending",
+    mode: "dry",
+    price: 175,
+    photos: ["placeholder.svg"],
+    deposit_required: false,
+  },
+  {
+    id: "splash",
+    name: "Splash & Slide",
+    description: "A slide made for sunny-day fun. Placeholder inventory.",
+    size: "20 × 12 ft · capacity pending",
+    mode: "wet",
+    price: 250,
+    photos: ["assets/slide.jpg"],
+    deposit_required: false,
+  },
+  {
+    id: "party",
+    name: "Big Party Combo",
+    description:
+      "Bounce and slide in one big adventure. Placeholder inventory.",
+    size: "25 × 15 ft · capacity pending",
+    mode: "dry",
+    price: 325,
+    photos: ["assets/pink-purple.jpg"],
+    deposit_required: false,
+  },
+];
+function read() {
   try {
-    r = await fetch(path, {
-      ...options,
-      headers: {
-        ...(options.body ? { "content-type": "application/json" } : {}),
-        ...(options.headers || {}),
-      },
-    });
+    const raw = localStorage.getItem(KEY);
+    const state = raw
+      ? JSON.parse(raw)
+      : {
+          units: seeds,
+          settings: defaultSettings,
+          blocks: {},
+          requests: [],
+          messages: [],
+        };
+    if (!state.preview_photos_version) {
+      for (const unit of state.units) {
+        const seed = seeds.find((item) => item.id === unit.id);
+        if (
+          seed &&
+          unit.photos?.length === 1 &&
+          unit.photos[0] === "placeholder.svg"
+        ) {
+          unit.photos = [...seed.photos];
+        }
+      }
+      state.preview_photos_version = 1;
+      if (raw) write(state);
+    }
+    return state;
   } catch {
     throw new Error(unavailable);
   }

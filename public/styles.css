@@ -114,20 +114,12 @@ header {
   align-items: center;
 }
 .logo {
-  width: 42px;
-  height: 42px;
-  border-radius: 14px;
-  background: var(--yellow);
-  display: grid;
-  place-items: center;
-  font-size: 23px;
-  color: var(--purple);
-}
-.brand small {
   display: block;
-  font-size: 11px;
-  font-weight: 400;
-  margin-top: 5px;
+  width: clamp(180px, 22vw, 210px);
+  height: auto;
+  aspect-ratio: 5 / 3;
+  object-fit: cover;
+  flex-shrink: 0;
 }
 .nav {
   display: flex;
