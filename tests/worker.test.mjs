@@ -1,5 +1,12 @@
 import { test, expect } from "vitest";
-import { env, fetchMock } from "cloudflare:test";
+import {
+  env,
+  fetchMock,
+  createExecutionContext,
+  waitOnExecutionContext,
+  createScheduledController,
+} from "cloudflare:test";
+import worker from "../worker/index.js";
 import { settingsError, nyToday } from "../worker/validation.js";
 import { calculateQuote } from "../worker/distance.js";
 import { accessToken, providers } from "./setup.mjs";
@@ -161,6 +168,9 @@ for (const [name, extra, code] of [
   ["past date", { date: "2000-01-01" }, 400],
   ["missing Turnstile", { turnstile_token: "" }, 400],
   ["failed Turnstile", { turnstile_token: "failed-token" }, 400],
+  ["replayed Turnstile", { turnstile_token: "used-token" }, 400],
+  ["Turnstile from another hostname", { turnstile_token: "wrong-host-token" }, 400],
+  ["Turnstile issued for another action", { turnstile_token: "fake-contact-token" }, 400],
   ["honeypot", { website: "fake-bot" }, 400],
 ]) {
   test(`booking rejects ${name} and creates no booking or email`, async () => {
@@ -335,16 +345,22 @@ for (const kind of [
   "tampered signature",
   "alg none",
   "unknown kid",
+  "missing expiry",
+  "future not-before",
 ]) {
   test(`Access rejects ${kind} with 401 and unchanged database`, async () => {
     const claims =
       kind === "expired"
         ? { exp: 1 }
-        : kind === "wrong issuer"
-          ? { iss: "https://wrong.example.test" }
-          : kind === "wrong audience"
-            ? { aud: ["wrong-audience"] }
-            : {};
+        : kind === "missing expiry"
+          ? { exp: undefined }
+          : kind === "future not-before"
+            ? { nbf: Math.floor(Date.now() / 1000) + 3600 }
+            : kind === "wrong issuer"
+              ? { iss: "https://wrong.example.test" }
+              : kind === "wrong audience"
+                ? { aud: ["wrong-audience"] }
+                : {};
     const header =
       kind === "alg none" ? { alg: "none" } : kind === "unknown kid" ? { kid: "unknown-key" } : {};
     let token = await accessToken(claims, header);
@@ -393,6 +409,51 @@ for (const [kind, headers, code] of [
     expect(await state()).toEqual(before);
   });
 }
+test("admin API base path requires Access", async () => {
+  const result = await request("/api/admin");
+  expect(result.status).toBe(401);
+  expect(result.body.error).toBe("Authentication required.");
+});
+test("Turnstile fails closed without a configured secret", async () => {
+  const result = await request("/api/booking-requests", {
+    method: "POST",
+    data: bookingInput(),
+    bindings: { ...env, TURNSTILE_SECRET: "" },
+  });
+  expect(result.status).toBe(400);
+  expect(await rows("booking_requests")).toEqual([]);
+  expect(await rows("notification_outbox")).toEqual([]);
+});
+test("contact accepts a contact-action Turnstile token and rejects a booking one", async () => {
+  const message = { name: "Test Customer", email: "customer@example.test", message: "Hello" };
+  const wrong = await request("/api/contact", {
+    method: "POST",
+    data: { ...message, turnstile_token: "fake-valid-token" },
+  });
+  expect(wrong.status).toBe(400);
+  const ok = await request("/api/contact", {
+    method: "POST",
+    data: { ...message, turnstile_token: "fake-contact-token" },
+  });
+  expect(ok.status).toBeLessThan(300);
+  expect(await rows("contact_messages")).toHaveLength(1);
+});
+test("outbox rows stay pending with no attempts used while email is unconfigured", async () => {
+  const unconfigured = { ...env, RESEND_API_KEY: "" };
+  const result = await request("/api/booking-requests", {
+    method: "POST",
+    data: bookingInput(),
+    bindings: unconfigured,
+  });
+  expect(result.status).toBe(201);
+  const ctx = createExecutionContext();
+  await worker.scheduled(createScheduledController(), unconfigured, ctx);
+  await waitOnExecutionContext(ctx);
+  const outbox = await rows("notification_outbox");
+  expect(outbox.length).toBeGreaterThan(0);
+  for (const m of outbox) expect(m).toMatchObject({ status: "pending", attempts: 0 });
+  expect(providers.emails).toHaveLength(0);
+});
 test("DEV_ADMIN_EMAIL never bypasses Access on non-localhost", async () => {
   const before = await state();
   const result = await request("/api/admin/booking-requests", {

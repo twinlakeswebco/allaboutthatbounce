@@ -21,7 +21,8 @@ async function keys(env) {
 }
 export async function verifyAdmin(req, env) {
   const host = new URL(req.url).hostname;
-  if (host === "localhost" && env.DEV_ADMIN_EMAIL) return { email: env.DEV_ADMIN_EMAIL };
+  if ((host === "localhost" || host === "127.0.0.1") && env.DEV_ADMIN_EMAIL)
+    return { email: env.DEV_ADMIN_EMAIL };
   const token = req.headers.get("Cf-Access-Jwt-Assertion");
   if (!token) return { error: fail("Authentication required.", 401) };
   try {
@@ -49,8 +50,12 @@ export async function verifyAdmin(req, env) {
       throw 0;
     const now = Math.floor(Date.now() / 1000),
       issuer = `https://${env.ACCESS_TEAM_DOMAIN}`;
+    // Allow one minute of clock skew; a token without a numeric expiry is never valid.
     if (
+      !Number.isFinite(claims.exp) ||
       claims.exp <= now ||
+      (claims.nbf !== undefined && !(Number.isFinite(claims.nbf) && claims.nbf <= now + 60)) ||
+      !env.ACCESS_AUD ||
       claims.iss !== issuer ||
       !(Array.isArray(claims.aud) ? claims.aud : [claims.aud]).includes(env.ACCESS_AUD)
     )
