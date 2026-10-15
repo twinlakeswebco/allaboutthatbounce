@@ -8,11 +8,11 @@ The private distance origin is never stored in this repository. Set it only as t
 npx wrangler d1 create allaboutthatbounce
 # Copy the returned database_id into wrangler.jsonc.
 npx wrangler d1 migrations apply allaboutthatbounce --local
-npx wrangler d1 execute allaboutthatbounce --local --file=migrations/seed_sample.sql
+npx wrangler d1 execute allaboutthatbounce --local --file=seeds/seed_sample.sql
 npx wrangler r2 bucket create allaboutthatbounce-photos
 ```
 
-`migrations/seed_sample.sql` contains sample inventory only and must never be run against the production database.
+`seeds/seed_sample.sql` contains sample inventory only and must never be run against the production database.
 
 Set the non-secret values in `wrangler.jsonc` before deployment: `FROM_EMAIL`, `SITE_ORIGIN`, `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`, `ADMIN_EMAILS`, and `TURNSTILE_SITE_KEY`. `OWNER_EMAIL` is already configured. Because the site is static and there is intentionally no public configuration endpoint, copy the same public Turnstile site key into the `data-sitekey` attribute in `public/book.html` and `public/contact.html` when replacing the placeholder.
 

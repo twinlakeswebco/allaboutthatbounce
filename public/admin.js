@@ -124,7 +124,7 @@ function editUnit(u) {
   for (const key of ["id", "name", "description", "size", "mode", "price"])
     form.elements.namedItem(key).value = u?.[key] ?? (key === "mode" ? "dry" : "");
   form.elements.deposit_required.checked = u?.deposit_required || false;
-  editingPhotos = u?.photos || ["placeholder.svg"];
+  editingPhotos = u?.photos || [];
   $("unit-heading").textContent = u ? "Edit inflatable" : "Add inflatable";
   form.hidden = false;
   $("unit-name").focus();
@@ -151,7 +151,7 @@ $("unit-form").addEventListener("submit", (e) => {
         )
       )
         throw new Error("Choose up to 3 JPEG, PNG, or WebP photos, each under 500 KB.");
-      let photos = $("remove-photos").checked ? ["placeholder.svg"] : editingPhotos;
+      let photos = $("remove-photos").checked ? [] : editingPhotos;
       if (files.length)
         photos = await Promise.all(
           files.map(

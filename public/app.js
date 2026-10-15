@@ -53,9 +53,10 @@ export function safePhoto(src) {
 export function unitCard(u, choose) {
   const c = text("article", "", "card");
   const img = document.createElement("img");
-  img.src = safePhoto(u.photos[0]);
+  const src = safePhoto(u.photos[0]);
+  img.src = src;
   img.alt =
-    u.photos[0] === "placeholder.svg"
+    src === "placeholder.svg"
       ? `Placeholder artwork for ${u.name}; actual photo pending`
       : `${u.name} inflatable`;
   img.width = 800;
