@@ -55,9 +55,7 @@ export function unitCard(u, choose) {
   const img = document.createElement("img");
   img.src = safePhoto(u.photos[0]);
   img.alt =
-    u.photos[0] === "placeholder.svg"
-      ? `Placeholder artwork for ${u.name}; actual photo pending`
-      : `${u.name} inflatable`;
+    u.photos[0] === "placeholder.svg" ? `Photo of ${u.name} coming soon` : `${u.name} inflatable`;
   img.width = 800;
   img.height = 600;
   img.loading = "lazy";
@@ -71,11 +69,11 @@ export function unitCard(u, choose) {
   c.append(img);
   const b = text("div", "", "card-body");
   b.append(
-    text("span", u.mode === "wet" ? "Wet inflatable" : "Dry inflatable", "tag"),
+    text("span", u.mode === "wet" ? "Water fun" : "Dry fun", "tag"),
     text("h3", u.name),
     text("p", u.description),
     text("p", u.size, "muted"),
-    text("p", money(u.price) + " rental", "price"),
+    text("p", "Starting at " + money(u.price), "price"),
   );
   if (choose) {
     const btn = text("button", "Choose " + u.name);
@@ -98,7 +96,8 @@ async function init() {
     $("featured").replaceChildren();
     for (const u of featured.slice(0, 3)) $("featured").append(unitCard(u));
     if (!$("featured").children.length)
-      $("featured").textContent = "New inflatables are on the way. Call us to discuss your event.";
+      $("featured").textContent =
+        "New inflatables are on the way. Call 502-851-7596 to talk through your event.";
   }
   if (page === "contact") {
     const form = $("contact-form");
@@ -109,11 +108,11 @@ async function init() {
       busy = true;
       const btn = form.querySelector("button");
       btn.disabled = true;
-      btn.textContent = "Saving…";
+      btn.textContent = "Sending…";
       try {
         await api.sendContactMessage(Object.fromEntries(new FormData(form)));
         $("contact-status").textContent =
-          "Demo message saved. No email was sent. Please call or email the business for a real inquiry.";
+          "Message sent. We'll get back to you soon. Need an answer sooner? Call 502-851-7596.";
         form.reset();
       } catch (err) {
         $("contact-status").textContent = err.message;
@@ -248,7 +247,7 @@ async function booking() {
   for (const u of units) $("units").append(unitCard(u, choose));
   if (!units.length)
     $("units").textContent =
-      "No inflatables are listed yet. Please call or email to discuss your event.";
+      "No inflatables are listed yet. Call 502-851-7596 to talk through your event.";
   const chosen = new URLSearchParams(location.search).get("unit");
   if (chosen) {
     const i = units.findIndex((u) => u.id === chosen);
@@ -274,7 +273,7 @@ async function booking() {
     if (addr.length < 5) return;
     const ticket = ++version;
     quote = null;
-    $("quote-status").textContent = "Checking delivery estimate…";
+    $("quote-status").textContent = "Checking delivery to that address…";
     totals();
     try {
       const q = await api.getDeliveryQuote(addr);
@@ -285,7 +284,9 @@ async function booking() {
       $("quote-status").textContent =
         q.status === "outside_area"
           ? ""
-          : `Demo estimate: ${q.distance_miles} fictional miles · ${q.status === "free" ? "free delivery" : money(q.fee) + " delivery"}. Final delivery is confirmed by the owner.`;
+          : q.status === "free"
+            ? `About ${q.distance_miles} miles away, so delivery is free. We'll confirm the details when we call.`
+            : `About ${q.distance_miles} miles away. That's past our free delivery zone, so delivery is ${money(q.fee)}. We'll confirm the details when we call.`;
     } catch (e) {
       if (ticket === version) $("quote-status").textContent = e.message;
     } finally {
@@ -303,12 +304,12 @@ async function booking() {
     if (!valid || !$("date").value) return;
     if (!quote || quote.status === "outside_area" || address.value.trim() !== quotedAddress) {
       $("booking-status").textContent =
-        "Wait for an eligible delivery estimate before sending your request.";
+        "We need a delivery quote for an address in our area before you can send your request.";
       return;
     }
     busy = true;
     totals();
-    submit.textContent = "Saving request…";
+    submit.textContent = "Sending…";
     try {
       const r = await api.createBookingRequest({
         ...Object.fromEntries(new FormData(form)),
@@ -318,7 +319,7 @@ async function booking() {
       $("booking").hidden = true;
       $("units").closest("section").hidden = true;
       $("confirmation").hidden = false;
-      $("request-reference").textContent = "Demo reference: " + r.id;
+      $("request-reference").textContent = "Request number: " + r.id;
       $("confirmation").focus();
     } catch (err) {
       $("booking-status").textContent = err.message;

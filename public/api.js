@@ -18,7 +18,8 @@ async function request(path, options = {}) {
   } catch {
     data = null;
   }
-  if (!r.ok) throw new Error(data?.error || "Something went wrong. Please try again.");
+  if (!r.ok)
+    throw new Error(data?.error || "Something went wrong. Please try again or call 502-851-7596.");
   return data;
 }
 const post = (path, data, method = "POST") => request(path, { method, body: JSON.stringify(data) });
