@@ -14,6 +14,17 @@ npx wrangler r2 bucket create allaboutthatbounce-photos
 
 `migrations/seed_sample.sql` contains sample inventory only and must never be run against the production database.
 
+## Catalog review seed
+
+`seeds/seed_catalog_review.sql` loads the 26 listings from the old public rental page (captured 2026-10-15) so the owner can review real names, prices, sizes, and supervision rules in a local build. `price_cents` is each unit's lowest standalone price; wet, dry, and add-on options are written out in the description. It uses `INSERT OR IGNORE`, so running it twice is safe.
+
+```sh
+npx wrangler d1 migrations apply allaboutthatbounce --local
+npx wrangler d1 execute allaboutthatbounce --local --file seeds/seed_catalog_review.sql
+```
+
+It is review data, not a migration. Tests only read numbered files in `migrations/`, so it never reaches the test suite. Do not run it with `--remote` until the owner has confirmed prices, inventory, and capacities; enter confirmed units through the admin instead.
+
 Set the non-secret values in `wrangler.jsonc` before deployment: `FROM_EMAIL`, `SITE_ORIGIN`, `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`, `ADMIN_EMAILS`, and `TURNSTILE_SITE_KEY`. `OWNER_EMAIL` is already configured. Because the site is static and there is intentionally no public configuration endpoint, copy the same public Turnstile site key into the `data-sitekey` attribute in `public/book.html` and `public/contact.html` when replacing the placeholder.
 
 Set secrets interactively so values never enter shell history or the repository:
