@@ -5,20 +5,30 @@ export const defaultSettings = {
   max_delivery_miles: null,
 };
 async function request(path, options = {}) {
-  const r = await fetch(path, {
-    ...options,
-    headers: {
-      ...(options.body ? { "content-type": "application/json" } : {}),
-      ...(options.headers || {}),
-    },
-  });
+  const unavailable = "This service is unavailable right now. Please call 502-851-7596 for help.";
+  let r;
+  try {
+    r = await fetch(path, {
+      ...options,
+      headers: {
+        ...(options.body ? { "content-type": "application/json" } : {}),
+        ...(options.headers || {}),
+      },
+    });
+  } catch {
+    throw new Error(unavailable);
+  }
+  if (!r.headers.get("content-type")?.toLowerCase().includes("application/json"))
+    throw new Error(unavailable);
   let data;
   try {
     data = await r.json();
   } catch {
-    data = null;
+    throw new Error(unavailable);
   }
-  if (!r.ok) throw new Error(data?.error || "Something went wrong. Please try again.");
+  if (data === null || typeof data !== "object") throw new Error(unavailable);
+  if (!r.ok)
+    throw new Error(data?.error || "Something went wrong. Please try again or call 502-851-7596.");
   return data;
 }
 const post = (path, data, method = "POST") => request(path, { method, body: JSON.stringify(data) });
