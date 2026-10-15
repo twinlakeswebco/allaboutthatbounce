@@ -283,6 +283,13 @@ p {
 .page-head h1 {
   font-size: clamp(2.3rem, 5vw, 3.6rem);
 }
+.owners-photo {
+  display: block;
+  width: min(100%, 480px);
+  height: auto;
+  margin-top: 24px;
+  border-radius: var(--radius);
+}
 .notice {
   padding: 18px 20px;
   background: var(--soft);
