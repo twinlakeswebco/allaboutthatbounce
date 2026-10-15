@@ -46,16 +46,19 @@ export function validate(form) {
 }
 export function safePhoto(src) {
   return typeof src === "string" &&
-    (/^(placeholder\.svg|data:image\/(jpeg|png|webp);base64,)/.test(src) || /^https:\/\//.test(src))
+    (src === "placeholder.svg" ||
+      /^\/media\/[A-Za-z0-9_-]+$/.test(src) ||
+      /^data:image\/(jpeg|png|webp);base64,/.test(src) ||
+      /^https:\/\//.test(src))
     ? src
     : "placeholder.svg";
 }
 export function unitCard(u, choose) {
   const c = text("article", "", "card");
   const img = document.createElement("img");
-  img.src = safePhoto(u.photos[0]);
-  img.alt =
-    u.photos[0] === "placeholder.svg" ? `Photo of ${u.name} coming soon` : `${u.name} inflatable`;
+  const src = safePhoto(u.photos[0]);
+  img.src = src;
+  img.alt = src === "placeholder.svg" ? `Photo of ${u.name} coming soon` : `${u.name} inflatable`;
   img.width = 800;
   img.height = 600;
   img.loading = "lazy";
@@ -63,6 +66,7 @@ export function unitCard(u, choose) {
     "error",
     () => {
       img.src = "placeholder.svg";
+      img.alt = `Photo of ${u.name} coming soon`;
     },
     { once: true },
   );

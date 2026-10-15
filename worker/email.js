@@ -12,6 +12,13 @@ export function mailRow(kind, to, reply, subject, text, html) {
   };
 }
 const CONTACT = "Call 502-851-7596 or email allaboutthatbounce7596@gmail.com.";
+const LOGISTICS = [
+  "Delivery is generally between 7 and 11 a.m., and pickup starts at 6 p.m. It’s an all-day, 8-hour rental. We’ll call the day before to confirm times.",
+  "Setup takes 30–45 minutes and ends with a quick safety review with the responsible adult.",
+  "No advance deposit is needed. Payment is due in full at delivery, before setup. Cash or check; exact cash, please.",
+  "Please have a clear, debris-free setup area and a dedicated outlet within 75 feet.",
+  "If the weather turns, you can cancel free up to 2 hours before drop-off.",
+];
 // Paragraphs become text (blank-line separated) and escaped HTML (first one bold).
 const body = (ps) => ({
   text: ps.join("\n\n"),
@@ -28,7 +35,8 @@ export function requestMails(r, env) {
   const customer = body([
     "We got your request. Your date isn’t booked until the owner confirms it.",
     `Unit: ${r.unit_name}\nDate: ${r.event_date}\nEstimated total: ${money(r.total_cents)}`,
-    "We’ll reply soon to confirm. Payment is cash or check at delivery.",
+    "We’ll reply soon. If your request is confirmed, here’s what to expect:",
+    ...LOGISTICS,
     `Questions? ${CONTACT}`,
   ]);
   return [
@@ -57,11 +65,7 @@ export function decisionMail(r, status) {
       ? [
           "Your booking is confirmed.",
           `Unit: ${r.unit_name}\nDate: ${r.event_date}\nTotal: ${money(r.total_cents)}`,
-          "Delivery is generally between 7 and 11 a.m., and pickup starts at 6 p.m. It’s an all-day, 8-hour rental. We’ll call the day before to confirm times.",
-          "Setup takes 30–45 minutes and ends with a quick safety review with the responsible adult.",
-          "Payment is due in full at delivery, before setup. Cash or check; exact cash, please.",
-          "Please have a clear, debris-free setup area and a dedicated outlet within 75 feet.",
-          "If the weather turns, you can cancel free up to 2 hours before drop-off.",
+          ...LOGISTICS,
           `Questions? ${CONTACT}`,
         ]
       : [

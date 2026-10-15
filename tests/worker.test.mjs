@@ -534,6 +534,28 @@ test("valid tiny PNG is accepted; replacement deletes orphaned R2 object", async
   expect(await rows("unit_photos")).toEqual([expect.objectContaining({ r2_key: newKey })]);
   expect((await env.PHOTOS.list()).objects).toHaveLength(1);
 });
+test("empty photo list removes all photos and their R2 objects", async () => {
+  const first = await admin("/api/admin/units/test-unit", {
+    method: "PUT",
+    data: unitInput([photo]),
+  });
+  const key = first.body.photos[0].slice(7);
+  expect(await env.PHOTOS.head(key)).not.toBeNull();
+  const placeholder = await admin("/api/admin/units/test-unit", {
+    method: "PUT",
+    data: unitInput(["placeholder.svg"]),
+  });
+  expect(placeholder.status).toBe(400);
+  expect(await env.PHOTOS.head(key)).not.toBeNull();
+  const cleared = await admin("/api/admin/units/test-unit", {
+    method: "PUT",
+    data: unitInput([]),
+  });
+  expect(cleared.status).toBe(200);
+  expect(cleared.body.photos).toEqual([]);
+  expect(await rows("unit_photos")).toHaveLength(0);
+  expect((await env.PHOTOS.list()).objects).toHaveLength(0);
+});
 test("scheduled retention anonymizes old bookings and deletes old messages and stale IP buckets", async () => {
   const old = await seedBooking({ event_date: "2000-01-01" });
   const recent = await seedBooking();
