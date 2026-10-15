@@ -8,7 +8,7 @@ Obtain explicit confirmation before deploying, merging a PR or running any remot
 
 Production is https://aatbky.us in business account `714af045eb67c3d815a7f9551b61d21b`, Worker `allaboutthatbounce`. `workers_dev` and preview URLs are disabled. After the approved October 15, 2026 deployment of `a7d1b2e`, `/about` shows “Meet the Arnolds.” Public GET smoke checks passed and unauthenticated admin page/API requests redirect to Access.
 
-`wrangler secret list` shows the origin, Google Maps, Turnstile and IP-hash secret names; it does not verify their values. `RESEND_API_KEY` is absent, and `FROM_EMAIL` is still a placeholder. The production Turnstile widget has `aatbky.us` configured. The approved read-only remote migration-status check reported no pending migrations; none were applied. Real provider calls and an end-to-end booking remain unverified. See `TEST-RESULTS.md`.
+`wrangler secret list` shows the origin, Google Maps, Turnstile and IP-hash secret names; it does not verify their values. `RESEND_API_KEY` was subsequently created and stored by the account holder and is present by name. The aatbky.us domain and its three approved sending DNS records are verified in Resend. The deployed `FROM_EMAIL` is still a placeholder; PR #18 prepares the verified sender and customer Reply-To. The production Turnstile widget has `aatbky.us` configured. The approved read-only remote migration-status check reported no pending migrations; none were applied. A live locality-level quote for La Grange, KY returned a valid result. Google API restrictions, real email delivery and an end-to-end booking remain unverified; catalog entry was deferred by request. See `TEST-RESULTS.md`.
 
 ## Cloudflare resources
 
@@ -90,7 +90,7 @@ Units are soft deleted. Pending or confirmed requests block removal only when th
 
 Against a running `wrangler dev` server, `npm run test:smoke` checks only `/api/units`, `/api/settings`, and `/api/units/:id/blocked-dates`. It is a smoke test, not contract verification. It does not replace the Vitest suite or verify production integrations.
 
-The compatible test pool retains the requested `fetchMock` API. Its installed workerd supports compatibility dates through 2025-09-06, so the local test run falls back from the configured 2026-10-14 date. The suite adds `nodejs_compat` only for the test harness. Production compatibility-date behavior is not verified. The former `public/_redirects` rule (`/ /index.html 200`) was removed because Cloudflare rejects it as a redirect loop at deploy; `html_handling: auto-trailing-slash` already serves `index.html` at `/`. See `TEST-RESULTS.md` for current test counts, production checks and verification limits.
+The test pool on the deployed revision retains `fetchMock` and falls back to 2025-09-06. PR #19 upgrades to the last compatible 0.12.x series, supporting dates through 2026-03-10 while retaining Vitest 3 and `fetchMock`; it still falls back from production’s 2026-10-14 date. Newer plugin releases remove `fetchMock` and need a separate harness migration. The suite adds `nodejs_compat` only for the test harness. Production compatibility-date behavior is not verified. The former `public/_redirects` rule (`/ /index.html 200`) was removed because Cloudflare rejects it as a redirect loop at deploy; `html_handling: auto-trailing-slash` already serves `index.html` at `/`. See `TEST-RESULTS.md` for current test counts, production checks and verification limits.
 
 ## Email completion and end-to-end verification
 

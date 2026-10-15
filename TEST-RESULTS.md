@@ -32,7 +32,9 @@ Worker version: `a158beed-632e-4a4a-a565-3802a0b3eb63`. Assets uploaded from `pu
 | Unauthenticated `GET /admin.html` | 302 to the configured Cloudflare Access team hostname |
 | Unauthenticated `GET /api/admin/units` | 302 to the same Access team hostname |
 | Production Turnstile widget | Configured in the business account for `aatbky.us`, managed mode |
-| `wrangler secret list` | `GOOGLE_MAPS_API_KEY`, `IP_HASH_SECRET`, `ORIGIN_ADDRESS`, `TURNSTILE_SECRET` present; `RESEND_API_KEY` absent |
+| `wrangler secret list` | All five names present after the account holder added `RESEND_API_KEY`; values not read |
+| Resend sending domain | `aatbky.us` verified; all three approved DKIM/sending DNS records verified, receiving disabled |
+| Live delivery quote | 200 with a valid quote for the public locality La Grange, KY; no private customer address used |
 
 The GET-only smoke test passed before and after deployment. It checks response shapes for units, settings and blocked dates; an empty inventory exercises the third route using a missing-unit ID. This is not an end-to-end booking or a complete API contract test. Secret names establish presence only, not correct values, restrictions or provider operation.
 
@@ -40,8 +42,8 @@ The GET-only smoke test passed before and after deployment. It checks response s
 
 - The installed test workerd supports compatibility dates only through 2025-09-06 and falls back from production's 2026-10-14 setting. Production compatibility-date behavior is not covered by this runtime. Test-only `nodejs_compat` enables the harness.
 - `npm ci` reports dependency advisories (1 moderate, 5 high, 2 critical) and deprecation of `@cloudflare/vitest-pool-workers`. No automatic/breaking dependency fix was applied as part of the About deployment.
-- `RESEND_API_KEY` is missing and `FROM_EMAIL` remains a placeholder. Sending-domain verification and delivery to both owner and customer are pending.
-- Production secret values, Google API restrictions, real Routes requests, a live Turnstile token, R2 upload/retrieval and a complete booking have not been verified.
+- The account holder added `RESEND_API_KEY`, and the sending domain is verified. The deployed `FROM_EMAIL` remains a placeholder pending PR #18 and deployment approval. Delivery to both owner and customer is still unverified.
+- Production secret values, Google API restrictions, a live Turnstile token, R2 upload/retrieval and a complete booking have not been verified. A valid locality-level delivery quote confirms the routing flow works but does not establish address-level accuracy or key restrictions.
 - The approved remote migration-status check reported no pending numbered migrations. No migration or seed was applied. This does not prove real provider operation.
 - The catalog remains empty, pending owner approval of listings, prices, specifications, configurations and photos. Review/sample seeds have not been run remotely.
 - No new mobile/desktop visual or interactive browser regression was performed in this check. Historical demo browser evidence is not evidence of current production booking readiness.
@@ -49,3 +51,11 @@ The GET-only smoke test passed before and after deployment. It checks response s
 ## Historical context
 
 The initial backend report recorded 84 Worker tests and an open PR #1. Those are historical results; current results above replace that status. The former `public/_redirects` rule (`/ /index.html 200`) was removed in merged PR #13 because Cloudflare rejected the loop. Static asset HTML handling now serves `/`; the removed redirect warning is not an outstanding issue.
+
+## Separate follow-up pull requests
+
+- PR #17 corrects canonical/social URLs, replaces the share image, adds Instagram to all footers, and confirms Rena as direct contact. All 13 frontend/email regressions passed; the About page was visually checked at 1280px and 360px with no horizontal overflow, and all page metadata/footer links were checked.
+- PR #18 configures the verified sender and Reply-To routing. All 94 Worker and 15 frontend/email tests passed with mocked providers, including the two new reply-routing regressions; deployment dry run passed.
+- PR #19 upgrades the test pool to 0.12.21 while retaining `fetchMock`. All 94 Worker and 13 frontend/email tests passed on that branch. Runtime support improves to 2026-03-10 but still falls back from production’s date; the current major plugin removes `fetchMock`. Dependency advisories remain.
+
+None of these PRs has been merged or deployed as part of this report. Catalog entry and a full booking/email test are deferred. Merged branch cleanup verified every old tip as an ancestor of main before removing 23 local and 15 remote branches; linked worktree files were retained.
