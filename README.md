@@ -154,10 +154,17 @@ Validate customer input server-side, protect admin endpoints with Access, and us
 - Cash or check only. Deposit toggle enables a notice, never online collection.
 - Unit removal is a soft delete, blocked only for pending or confirmed requests with an event date of today or later in America/New_York. Past requests retain their unit name and price snapshots. Removal deletes unit photo rows, matching R2 objects, and manual blocks.
 - The palette is provisional; edit variables at the top of `styles.css`. System fonts satisfy the no-unnecessary-font-dependencies requirement.
-- All inventory, prices, photos, review text, owner story, and policies are visibly marked sample/placeholder. Replace and approve before launch.
+- Public copy comes from the sources listed under “Content sources” below. Catalog prices still need owner approval before launch.
 - Open Graph assumes the existing `allaboutthatbounceky.net` domain from supplied notes; change the absolute `og:image` URL on each HTML page if the final domain changes. `share.png` is a local 1200×630 placeholder image.
-- Only “serves the La Grange, Kentucky area” is used for company geography. No private origin or business street address is in deployed code or metadata.
+- Company geography is limited to the five served counties (see “Content sources”). No private origin or business street address is in deployed code or metadata.
 - Public demo banners must be replaced with truthful live messages only when the real API and notifications exist.
+
+## Content sources
+
+- **Reference capture.** Business facts, policies, and catalog details come from the previous public site, captured on 2026-10-15 into `aatb-website-reference/`. That folder stays untracked and outside `public/`; never commit or deploy it. Policy copy follows that site's FAQ.
+- **Contact.** `allaboutthatbounce7596@gmail.com` is the canonical email everywhere, with phone 502-851-7596 and the Facebook page `Allaboutthatbounceky`. Older addresses from the previous site are retired; do not reintroduce them.
+- **Service area.** Oldham, Shelby, Henry, Trimble, and Jefferson counties (La Grange, Shelbyville). Grayson County and Leitchfield are intentionally excluded until the business is ready to serve them.
+- **Catalog seed.** `seeds/seed_catalog_review.sql` is review-only: its prices and specs await owner confirmation and it is never applied by migrations or tests.
 
 ## Historical frontend demo verification
 
