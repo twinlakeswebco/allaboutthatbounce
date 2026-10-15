@@ -2,9 +2,9 @@ name: Tests and formatting
 
 on:
   pull_request:
-    branches: [main, backend-worker]
+    branches: [main]
   push:
-    branches: [main, backend-worker]
+    branches: [main]
   workflow_dispatch:
 
 permissions:

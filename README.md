@@ -1,195 +1,124 @@
-# All About That Bounce — frontend demo
+# All About That Bounce
 
-Plain HTML, CSS, and vanilla JavaScript. Four public pages plus a separate owner dashboard. No framework, CMS, payment form, backend, third-party scripts, or remote fonts.
+Inflatable rentals for Oldham, Shelby, Henry, Trimble and Jefferson counties, Kentucky. Matthew and Rena Arnold own the business. Every rental begins as a request and becomes booked only after owner confirmation. Payment is cash or check at delivery, with no advance deposit and no online payment.
 
-## Files
+Production: https://aatbky.us. Contact: allaboutthatbounce7596@gmail.com · 502-851-7596 · Facebook Allaboutthatbounceky · Instagram allaboutthatbounce502.
 
-All deployed files are flat inside `public/`:
+## Application
 
-- `index.html`, `about.html`, `book.html`, `contact.html`: public pages.
-- `admin.html`: owner dashboard; no login UI.
-- `styles.css`: responsive styles and centralized color/font variables.
-- `app.js`: shared helpers, public-page rendering, date picker, booking/contact flows.
-- `admin.js`: requests, units/photos, delivery settings, blocked dates.
-- `api.js`: the only data layer; replace its async implementations with HTTP requests.
-- `placeholder.svg`, `favicon.svg`, `share.svg`, `share.png`: lightweight local placeholder assets.
-- `_headers`: security headers and admin noindex/no-store.
+One Cloudflare Worker serves the API and static assets. The frontend uses plain HTML, CSS and vanilla JavaScript, with no build step, remote fonts or third-party scripts except Turnstile. Inventory, requests and settings persist in D1; uploaded unit photos live in R2. This is not a localStorage demo.
 
-Root files: `wrangler.jsonc` deploy configuration, `test-api.mjs` three-route GET smoke test, and product/design notes. Existing reference documents at repository root are **not** included in deployed assets. Never change the assets directory to the repository root.
+| Location | Purpose |
+| --- | --- |
+| `public/index.html`, `about.html`, `book.html`, `contact.html` | Public pages |
+| `public/admin.html`, `admin.js` | Owner dashboard: requests, inventory/photos, delivery settings and blocked dates |
+| `public/app.js` | Shared UI, cards, calendar, booking and contact flows |
+| `public/api.js` | Sole frontend data layer; calls `/api/*` and rejects HTML fallback responses |
+| `public/styles.css` | Mobile-first layout, system fonts and shared color tokens |
+| `public/_headers` | Security headers and admin noindex/no-store |
+| `worker/index.js` | API router, booking decisions and scheduled work |
+| `worker/access.js` | Access JWT validation, email allowlist and admin write guards |
+| `worker/distance.js` | Google Routes quotes and hashed-address cache |
+| `worker/email.js` | Resend messages, durable outbox and retries |
+| `worker/storage.js`, `validation.js` | R2 photos, image checks and input validation |
+| `migrations/` | Numbered D1 schema migrations only |
+| `seeds/` | Local sample/review data; never run against production |
+| `wrangler.jsonc` | Worker, assets, business account, custom domain, D1/R2 bindings and cron |
 
-## Run locally
+Only `public/` is served as static assets. Never change the assets directory to the repository root. `aatb-website-reference/` is an untracked capture of the previous public site, used only as a content source; never commit or deploy it. Synced/private reference documents must not be served.
+
+## Local development
+
+Use Node 22 or newer and the locked dependencies:
 
 ```sh
-python3 -m http.server 8080 --directory public
+npm ci
+npx wrangler d1 migrations apply allaboutthatbounce --local
+npx wrangler dev
 ```
 
-Open http://localhost:8080/index.html and http://localhost:8080/admin.html in the same browser. ES modules require HTTP, not `file://`. Demo changes persist in localStorage under `aatb-demo-v1`. To reset, clear this key using browser developer tools. Different browsers/devices do not share requests or inventory. No messages or requests are sent to the owner.
+Open the localhost URL Wrangler prints. A plain static HTTP server cannot run this application's API. Local Wrangler storage is separate from production.
 
-Run checks with Node 20+:
+For local owner tools, put an authorized test email in `DEV_ADMIN_EMAIL` in an ignored `.dev.vars` file. The bypass works only on the exact hostname `localhost`. Keep all real secrets out of source, fixtures and logs; see [BACKEND.md](BACKEND.md) for setup. Automated tests provide fake secret bindings and mock every external service.
+
+Optional local catalog review:
+
+```sh
+npx wrangler d1 execute allaboutthatbounce --local --file seeds/seed_catalog_review.sql
+```
+
+Neither catalog review data nor `seeds/seed_sample.sql` may run with `--remote`. Owners must confirm inventory, prices, configurations, dimensions, capacities and matching photos; enter approved units through the protected admin UI. Each current unit supports one fixed price and one wet/dry mode. Do not represent an add-on price as a full rental price, or create independent availability for configurations of the same physical unit.
+
+## Checks
+
+```sh
+npm run format:check
+npm test
+```
+
+`npm test` runs the Worker integration suite in Vitest/Miniflare, followed by frontend/email regressions in Node/jsdom. The tests apply the real numbered migrations to isolated local D1 storage and exercise local R2; seeds are excluded. Turnstile, Resend, Google Routes and Access certificate calls are mocked, with unmocked outbound Worker networking disabled.
+
+Against a running local server:
 
 ```sh
 npm run test:smoke
 ```
 
-## GitHub Pages frontend preview
-
-Enable GitHub Pages in repository Settings → Pages, with GitHub Actions as the
-publishing source. `.github/workflows/preview-pages.yml` publishes only `public/`
-when website files change on `main`, or when run manually. Repository-root
-reference documents and backend files are excluded.
-
-Preview URL: `https://twinlakeswebco.github.io/allaboutthatbounce/` (no `/public`
-suffix). This publishes the browser-storage frontend demo on `main`; the Worker
-backend is deployed separately to Cloudflare. GitHub Pages cannot run the Worker.
-
-## Cloudflare Workers static assets
+Against production, the same GET-only smoke test is safe:
 
 ```sh
-npx wrangler dev
+API_BASE_URL=https://aatbky.us npm run test:smoke
+```
+
+It checks units, settings and blocked dates, including the empty-catalog case. It does not verify real provider credentials, email delivery, photo uploads or a complete booking. See [TEST-RESULTS.md](TEST-RESULTS.md) for verified results and limitations.
+
+## Manual deployment
+
+Deployments are manual; merging does not deploy the Worker. Before deployment, check the intended revision and run `npm ci`, `npm run format:check` and `npm test`. Use `npx wrangler whoami` to check authentication; `wrangler.jsonc` targets business account `714af045eb67c3d815a7f9551b61d21b`.
+
+Obtain explicit confirmation before deploying, merging a pull request, or running any remote D1 command. Schema migration inspection/application is a separate approved action, not an automatic deployment step. Never apply a seed remotely.
+
+After deployment is approved:
+
+```sh
 npx wrangler deploy
 ```
 
-No build step. Wrangler serves only `public/`. `/` serves the index page; links use `.html` routes. This configuration has no Worker API code or D1 binding yet. Put Cloudflare Access in front of `/admin.html` and **all future admin API routes** before production use. No client-side login or security claim is made by this demo.
+Verify `/about` shows “Meet the Arnolds.”, run the production smoke test, and check unauthenticated `/admin.html` and `/api/admin/*` still redirect to Cloudflare Access. `workers_dev` and preview URLs remain disabled. `/` is served by static asset HTML handling; no `_redirects` rewrite is required.
 
-## API contract
+The existing GitHub Pages workflow publishes a static copy only. It cannot run the API and must not be presented as a functional booking preview. Its removal is pending a project decision. A functional preview requires a separate Worker and isolated data/services.
 
-All data functions return Promises and reject on failure (human-readable `Error.message`). Dollar values are numbers in dollars, not integer cents. Dates are local event-calendar dates in `YYYY-MM-DD` form. IDs are opaque strings. Frontend code imports only this module for data operations.
+## API and business rules
 
-| Function | Input | Output |
-|---|---|---|
-| `listUnits()` | None | `Unit[]` |
-| `getSettings()` | None | `DeliverySettings` |
-| `updateSettings(settings)` | Complete `DeliverySettings` | Saved `DeliverySettings` |
-| `getBlockedDates(unitId)` | Unit ID string | `string[]` of unavailable dates, including manual blocks and confirmed requests |
-| `getDeliveryQuote(address)` | Complete customer delivery-address string | `DeliveryQuote` (exact contract below) |
-| `createBookingRequest(input)` | `BookingInput` | `BookingRequest`, status `pending` |
-| `listBookingRequests()` | None | `BookingRequest[]` for admin |
-| `setBookingStatus(id, status)` | Request ID, `"confirmed"` or `"declined"` | Updated `BookingRequest`; confirmation blocks that unit/date |
-| `saveUnit(unit)` | `Unit` without ID for creation; with ID for update | Saved `Unit` |
-| `deleteUnit(id)` | Unit ID | `{ "deleted": true }`; rejects for pending/confirmed requests dated today or later in America/New_York |
-| `blockDate(unitId, date)` | Unit ID and date string | `{ "unit_id": string, "date": string, "blocked": true }` |
-| `unblockDate(unitId, date)` | Unit ID and date string | Same shape with `blocked: false`; rejects for confirmed rentals |
-| `sendContactMessage(input)` | `{ name: string, email: string, message: string }` | `{ id: string, status: "received" }`; future stub route `POST /api/contact` |
+Frontend data functions return Promises and reject with human-readable errors. Prices and fees are dollar numbers at the API boundary; the Worker stores and recomputes totals in integer cents. Dates are event-calendar dates in `YYYY-MM-DD`; availability decisions use America/New_York. IDs are opaque strings.
 
-`localDate(date = new Date())` is a synchronous formatting helper, not an endpoint. `defaultSettings` is a demo seed, not an endpoint.
+| Method and route | Behavior |
+| --- | --- |
+| `GET /api/units` | Active units with approved `/media/*` photo URLs |
+| `GET /api/settings` | Public delivery settings |
+| `GET /api/units/:id/blocked-dates` | Manual blocks and confirmed rentals, excluding past dates |
+| `POST /api/delivery-quote` | `{ address }` → `{ distance_miles, fee, status }` |
+| `POST /api/booking-requests` | Validated pending request, idempotent by request key; queues owner and customer notifications |
+| `POST /api/contact` | Validated contact message; queues owner notification |
+| `PUT /api/admin/settings` | Save complete delivery settings |
+| `GET /api/admin/booking-requests` | List requests |
+| `POST /api/admin/booking-requests/:id/status` | Confirm or decline a pending request |
+| `POST /api/admin/units`, `PUT /api/admin/units/:id` | Create/update a unit and up to five photos, each at most 1 MB |
+| `DELETE /api/admin/units/:id` | Soft-delete if no pending/confirmed request is dated today or later |
+| `PUT`, `DELETE /api/admin/units/:id/blocked-dates/:date` | Add/remove manual block; confirmed rentals cannot be unblocked |
 
-```ts
-type Unit = {
-  id: string;
-  name: string;
-  description: string;
-  size: string;
-  mode: "dry" | "wet";
-  price: number;
-  photos: string[]; // demo data URLs or placeholder; real backend returns approved image URLs
-  deposit_required: boolean; // all seeds false; notice only, no payment implementation
-};
-type DeliverySettings = {
-  free_radius_miles: number; // 15
-  per_mile_rate: number; // 0.35
-  trip_multiplier: number; // 4
-  max_delivery_miles: number | null; // null: no maximum
-};
-type DeliveryQuote = {
-  distance_miles: number;
-  fee: number;
-  status: "free" | "fee" | "outside_area";
-};
-type BookingInput = {
-  unit_id: string;
-  date: string;
-  name: string;
-  phone: string;
-  email: string;
-  event_type: string;
-  delivery_address: string;
-  idempotency_key: string;
-};
-type BookingRequest = BookingInput & {
-  id: string;
-  status: "pending" | "confirmed" | "declined";
-  created_at: string; // ISO timestamp
-  unit_name: string;
-  unit_price: number;
-  delivery_quote: DeliveryQuote;
-  total: number;
-};
-```
+Booking input includes `unit_id`, `date`, `name`, `phone`, `email`, `event_type`, `delivery_address` and `idempotency_key`. Booking/contact also require the corresponding action's `turnstile_token` and an empty `website` honeypot; `api.js` collects these protected fields. HMAC IP buckets rate-limit requests. Pending requests do not hold dates; a unique D1 index permits only one confirmed request per unit/date.
 
-### Exact delivery quote request/response
+All admin API routes validate the Cloudflare Access JWT and `ADMIN_EMAILS`, with same-origin/content-type checks on writes. Cloudflare Access also protects the admin page at the edge. Do not expose an alternate hostname around that protection.
 
-The function signature is `getDeliveryQuote(address: string): Promise<DeliveryQuote>`.
-Recommended real endpoint: `POST /api/delivery-quote`, JSON body:
+Delivery is free within the configured radius. Outside it, the fee is **full distance × per-mile rate × trip multiplier**, rounded to cents. Defaults are 15 free miles, $0.35/mile, multiplier 4 and no maximum. Thus 16 miles costs $22.40 and 20 miles costs $28.00. A configured maximum takes precedence; `outside_area` has a zero fee sentinel and disables submission. The private origin exists only as `ORIGIN_ADDRESS`; no frontend, metadata, logs or repository content may reveal it. Quote caches retain address hashes, not raw addresses.
 
-```json
-{ "address": "CUSTOMER_DELIVERY_ADDRESS" }
-```
+The five named counties describe the business service area. The distance API calculates a route and optional distance cap; it does not validate a customer's county. Owners must check service eligibility when confirming.
 
-Response, for a 16-mile address:
+Booking creation and decisions queue email in D1. The 15-minute cron retries pending/failed notifications up to five attempts. A successful request response means saved and queued, not delivered. Without `RESEND_API_KEY`, outbox rows remain pending without using attempts. The cron also anonymizes old booking contact details and deletes old contact messages and rate-limit buckets.
 
-```json
-{ "distance_miles": 16, "fee": 22.4, "status": "fee" }
-```
+## Production status and open decisions
 
-Other examples:
+On October 15, 2026, revision `a7d1b2e` was deployed and the About heading, public GET API and Access redirects were verified. The live catalog is empty. Four required secrets are present by name; `RESEND_API_KEY` is absent and `FROM_EMAIL` is still `bookings@example.com`. Real email delivery and an end-to-end booking are not verified. Do not describe the business as ready for online booking until setup and owner approvals are complete.
 
-```json
-{ "distance_miles": 15, "fee": 0, "status": "free" }
-```
-
-```json
-{ "distance_miles": 20, "fee": 28, "status": "fee" }
-```
-
-With maximum 25 miles and distance 26:
-
-```json
-{ "distance_miles": 26, "fee": 0, "status": "outside_area" }
-```
-
-The zero fee in `outside_area` is a sentinel, not free delivery. The UI displays “Unavailable,” disables submission, and provides phone/email links.
-
-The mock recognizes `demo 15 miles`, `demo 16 miles`, `demo 20 miles`, etc. in the address field. Otherwise it deterministically invents 10–35 miles from the entered text. This is not geographic lookup and must be replaced. The backend alone calculates real distance from a private origin stored in server configuration. No origin is provided to the frontend.
-
-Mock calculation is contained only in `api.js`: distances within the configured radius are free; outside that radius, **full distance × per-mile rate × trip multiplier**, rounded to cents. Maximum distance is checked before an eligible fee is returned. Page code only adds the returned delivery fee to the unit price. The booking implementation re-quotes and validates availability rather than trusting the displayed total.
-
-## Backend handoff
-
-Validate customer input server-side, protect admin endpoints with Access, and use D1 transactions/unique constraints to ensure concurrent confirmation cannot reserve the same unit/date twice. Keep booking creation idempotent. Pending requests do not hold dates. Confirmation and manual blocks must affect availability immediately. Real booking totals must be recomputed from server inventory/settings, never trusted from a client. Implement photo uploads/storage behind `saveUnit` or a private helper inside `api.js` so pages do not need endpoint knowledge. Demo photos are limited to three files, 500 KB each, to avoid overflowing localStorage.
-
-## Assumptions and pre-launch content
-
-- One unit per request; rental price covers the requested date. Duration/times are not supplied.
-- A request remains pending until a human confirms; confirmation does not send notifications in this frontend demo.
-- Cash or check only. Deposit toggle enables a notice, never online collection.
-- Unit removal is a soft delete, blocked only for pending or confirmed requests with an event date of today or later in America/New_York. Past requests retain their unit name and price snapshots. Removal deletes unit photo rows, matching R2 objects, and manual blocks.
-- The palette is provisional; edit variables at the top of `styles.css`. System fonts satisfy the no-unnecessary-font-dependencies requirement.
-- Public copy comes from the sources listed under “Content sources” below. Catalog prices still need owner approval before launch.
-- Open Graph assumes the existing `allaboutthatbounceky.net` domain from supplied notes; change the absolute `og:image` URL on each HTML page if the final domain changes. `share.png` is a local 1200×630 placeholder image.
-- Company geography is limited to the five served counties (see “Content sources”). No private origin or business street address is in deployed code or metadata.
-- Public demo banners must be replaced with truthful live messages only when the real API and notifications exist.
-
-## Content sources
-
-- **Reference capture.** Business facts, policies, and catalog details come from the previous public site, captured on 2026-10-15 into `aatb-website-reference/`. That folder stays untracked and outside `public/`; never commit or deploy it. Policy copy follows that site's FAQ.
-- **Contact.** `allaboutthatbounce7596@gmail.com` is the canonical email everywhere, with phone 502-851-7596 and the Facebook page `Allaboutthatbounceky`. Older addresses from the previous site are retired; do not reintroduce them.
-- **Service area.** Oldham, Shelby, Henry, Trimble, and Jefferson counties (La Grange, Shelbyville). Grayson County and Leitchfield are intentionally excluded until the business is ready to serve them.
-- **Catalog seed.** `seeds/seed_catalog_review.sql` is review-only: its prices and specs await owner confirmation and it is never applied by migrations or tests.
-
-## Historical frontend demo verification
-
-The original frontend demo checks passed. Headless Chromium checks passed for all five routes at 360px with no horizontal overflow or JavaScript errors; booking → pending request → admin confirmation → unavailable date; 15/16/20-mile fee examples; outside-area submission blocking; inventory CRUD; manual blocking/unblocking; contact validation and demo save. Mobile route screenshots and a desktop homepage screenshot were inspected. These checks verify the browser-local demo, not a future Worker/D1 implementation or production deployment.
-
-## Automated checks
-
-Run `npm ci`, `npm run format:check`, and `npm test`. The test command runs both the Worker integration suite and the frontend/email regressions. These same checks run in `.github/workflows/tests.yml` for pull requests to `backend-worker` and `main`; a successful Cloudflare Pages deployment alone is not a passing test run.
-
-`npm run test:worker` runs the unit and D1/R2 integration coverage in Vitest with Miniflare. `vitest.config.mjs` loads `wrangler.jsonc`, supplies fake values for every variable and secret, and exposes only numbered files from `migrations/` to `readD1Migrations`. Setup applies them using `applyD1Migrations`; it never reads or loads `seed_sample.sql`. Each test receives isolated D1 and R2 storage.
-
-Outbound requests are intercepted with `fetchMock` from `cloudflare:test`, with `disableNetConnect` enabled. Turnstile, Resend, Google Routes, and Access certificates use mocks. Access JWTs are signed with an RSA key generated in test setup. The suite checks responses and stored data, including decision races and rollback.
-
-`npm run test:frontend` uses Node’s test runner and jsdom to load the actual HTML and ES modules. It exercises photo rendering, admin save/remove payloads, queued-notification copy, special-arrangements copy, and HTML fallback failures. It also checks customer email logistics, escaping, and subjects. It does not verify visual layout in a browser.
-
-`npm run test:smoke` checks only the three public GET routes against a running `wrangler dev` server, or the origin set in `API_BASE_URL`. It is a smoke test, not contract verification. These tests do not verify real provider credentials or services. See `BACKEND.md` for Worker deployment and the distinction between a static Pages preview and the running backend.
-
-The compatible test pool retains the requested `fetchMock` API. Its installed workerd supports compatibility dates through 2025-09-06, so the local test run falls back from the configured 2026-10-14 date. The suite adds `nodejs_compat` only for the test harness. Production compatibility-date behavior is not verified. The former `public/_redirects` rule (`/ /index.html 200`) was removed because Cloudflare rejects it as a redirect loop at deploy; `html_handling: auto-trailing-slash` already serves `index.html` at `/`. See `TEST-RESULTS.md` for the complete captured test output and verification limits.
+The working logo and palette remain provisional. Canonical production is currently hosted at `aatbky.us`, while Open Graph metadata still points at the previous domain and uses a placeholder image. Owner confirmation is pending for direct contact with Matthew or Rena and adding Instagram to shared footers. See [PRODUCT.md](PRODUCT.md), [DESIGN.md](DESIGN.md) and [BACKEND.md](BACKEND.md).
