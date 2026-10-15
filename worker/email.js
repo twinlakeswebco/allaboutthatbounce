@@ -144,7 +144,7 @@ export async function sendResend(env, m) {
     body: JSON.stringify({
       from: env.FROM_EMAIL,
       to: [m.to_email],
-      reply_to: m.reply_to || undefined,
+      reply_to: m.reply_to || env.OWNER_EMAIL,
       subject: m.subject,
       html: m.html,
       text: m.text,
