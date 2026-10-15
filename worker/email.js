@@ -11,10 +11,26 @@ export function mailRow(kind, to, reply, subject, text, html) {
     html,
   };
 }
+const CONTACT = "Call 502-851-7596 or email allaboutthatbounce7596@gmail.com.";
+// Paragraphs become text (blank-line separated) and escaped HTML (first one bold).
+const body = (ps) => ({
+  text: ps.join("\n\n"),
+  html: ps
+    .map((p, i) => {
+      const t = escapeHtml(p).replace(/\n/g, "<br>");
+      return `<p>${i ? t : `<strong>${t}</strong>`}</p>`;
+    })
+    .join(""),
+});
 export function requestMails(r, env) {
   const admin = `New booking request\nUnit: ${r.unit_name}\nDate: ${r.event_date}\nCustomer: ${r.name}\nPhone: ${r.phone}\nEmail: ${r.email}\nDelivery address: ${r.delivery_address}\nDistance: ${r.distance_miles} miles\nDelivery fee: ${money(r.delivery_fee_cents)}\nTotal: ${money(r.total_cents)}\n${env.SITE_ORIGIN}/admin.html`;
   const safe = escapeHtml(admin).replace(/\n/g, "<br>");
-  const customer = `Your request was received. Your date is NOT booked until the owner confirms it.\n\nUnit: ${r.unit_name}\nDate: ${r.event_date}\nEstimated total: ${money(r.total_cents)}\n\nPayment is cash or check.`;
+  const customer = body([
+    "We got your request. Your date isn’t booked until the owner confirms it.",
+    `Unit: ${r.unit_name}\nDate: ${r.event_date}\nEstimated total: ${money(r.total_cents)}`,
+    "We’ll reply soon to confirm. Payment is cash or check at delivery.",
+    `Questions? ${CONTACT}`,
+  ]);
   return [
     mailRow(
       "new_request",
@@ -29,26 +45,37 @@ export function requestMails(r, env) {
       r.email,
       null,
       "Booking request received",
-      customer,
-      `<p><strong>Your request was received. Your date is NOT booked until the owner confirms it.</strong></p><p>${escapeHtml(r.unit_name)} · ${escapeHtml(r.event_date)} · ${money(r.total_cents)}</p><p>Payment is cash or check.</p>`,
+      customer.text,
+      customer.html,
     ),
   ];
 }
 export function decisionMail(r, status) {
   const confirmed = status === "confirmed";
-  const first = confirmed
-    ? "Your booking is confirmed."
-    : "We’re sorry, but we can’t confirm this booking request.";
-  const text = confirmed
-    ? `${first}\n\nDate: ${r.event_date}\nUnit: ${r.unit_name}\nTotal: ${money(r.total_cents)}\nPayment is cash or check.`
-    : `${first}\n\nPlease call or email us to find another date.`;
+  const m = body(
+    confirmed
+      ? [
+          "Your booking is confirmed.",
+          `Unit: ${r.unit_name}\nDate: ${r.event_date}\nTotal: ${money(r.total_cents)}`,
+          "Delivery is generally between 7 and 11 a.m., and pickup starts at 6 p.m. It’s an all-day, 8-hour rental. We’ll call the day before to confirm times.",
+          "Setup takes 30–45 minutes and ends with a quick safety review with the responsible adult.",
+          "Payment is due in full at delivery, before setup. Cash or check; exact cash, please.",
+          "Please have a clear, debris-free setup area and a dedicated outlet within 75 feet.",
+          "If the weather turns, you can cancel free up to 2 hours before drop-off.",
+          `Questions? ${CONTACT}`,
+        ]
+      : [
+          "We’re sorry, but we can’t confirm this booking request.",
+          `We’d love to help you find another date or unit. ${CONTACT}`,
+        ],
+  );
   return mailRow(
     status,
     r.email,
     null,
     confirmed ? "Booking confirmed" : "Booking request update",
-    text,
-    `<p><strong>${escapeHtml(first)}</strong></p><p>${confirmed ? `${escapeHtml(r.event_date)} · ${escapeHtml(r.unit_name)} · ${money(r.total_cents)}<br>Payment is cash or check.` : "Please call or email us to find another date."}</p>`,
+    m.text,
+    m.html,
   );
 }
 export function contactMail(x, env) {
