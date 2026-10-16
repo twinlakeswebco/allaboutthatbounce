@@ -17,10 +17,10 @@ const exampleUnit = {
   deposit_required: false,
 };
 const address = "100 Example St, Anytown, KY 40000";
-const json = (value, status = 200) =>
+const json = (value, status = 200, headers = {}) =>
   new Response(JSON.stringify(value), {
     status,
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...headers },
   });
 async function eventually(check, label = "expected page state") {
   for (let i = 0; i < 100; i++) {
@@ -57,8 +57,8 @@ async function bookingPage(t, overrides = {}) {
     booking: null,
     ...overrides,
   };
-  const dom = new JSDOM(await readFile(new URL("book.html", root), "utf8"), {
-    url: "https://example.test/book.html" + (overrides.search || ""),
+  const dom = new JSDOM(await readFile(new URL(overrides.file || "book.html", root), "utf8"), {
+    url: `https://example.test/${overrides.file || "book.html"}` + (overrides.search || ""),
     runScripts: "outside-only",
   });
   t.after(async () => {
@@ -75,7 +75,13 @@ async function bookingPage(t, overrides = {}) {
       return api.unitsError ? json({ error: "units down" }, 503) : json(api.units);
     if (path === "/api/settings")
       return json({ free_radius_miles: 15, per_mile_rate: 0.35, trip_multiplier: 4 });
-    if (path.endsWith("/blocked-dates")) return json(api.blocked);
+    if (path.endsWith("/blocked-dates"))
+      return json(
+        api.blocked,
+        200,
+        api.serverDate ? { date: new Date(api.serverDate).toUTCString() } : {},
+      );
+    if (path === "/api/contact") return json({ id: "message-1", status: "received" }, 201);
     if (path === "/api/delivery-quote") {
       if (api.quoteError) return json({ error: api.quoteError }, 503);
       return json(typeof api.quote === "function" ? api.quote(body.address) : api.quote);
@@ -102,7 +108,12 @@ async function bookingPage(t, overrides = {}) {
   dom.window.crypto.randomUUID = randomUUID;
   dom.window.HTMLElement.prototype.scrollIntoView = () => {};
   let resets = 0;
-  dom.window.turnstile = { reset: () => resets++ };
+  const renders = [];
+  dom.window.turnstile = {
+    reset: () => resets++,
+    render: (el, options) => renders.push({ el, options }),
+  };
+  if (api.width) Object.defineProperty(dom.window, "innerWidth", { value: api.width });
   const context = dom.getInternalVMContext();
   const modules = new Map();
   async function load(url) {
@@ -122,6 +133,7 @@ async function bookingPage(t, overrides = {}) {
     window: dom.window,
     document,
     calls,
+    renders,
     $,
     get resets() {
       return resets;
@@ -596,4 +608,117 @@ test("the honeypot is hidden from assistive technology and cannot take focus", a
 test("the page offers no live region around the whole review panel", async () => {
   const html = await readFile(new URL("book.html", root), "utf8");
   assert.doesNotMatch(html, /<dl class="review-list"[^>]*aria-live/);
+});
+
+test("calendar dates follow the server's clock, not the device's", async (t) => {
+  // The server says it is the 15th, three months from now; the device clock disagrees.
+  const now = new Date();
+  const serverDate = Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 3, 15, 16, 0, 0);
+  const p = await bookingPage(t, { serverDate });
+  await p.choose();
+  const month = new Date(now.getUTCFullYear(), now.getUTCMonth() + 3, 1).toLocaleDateString(
+    "en-US",
+    { month: "long", year: "numeric" },
+  );
+  assert.equal(p.$("calendar").querySelector("strong").textContent, month);
+  assert.equal(p.$("calendar").querySelector('[data-nav="prev"]').disabled, true);
+  assert.equal(p.$("calendar").querySelector('[data-day="14"]').disabled, true);
+  assert.match(
+    p.$("calendar").querySelector('[data-day="14"]').getAttribute("aria-label"),
+    /already passed/,
+  );
+  assert.equal(p.$("calendar").querySelector('[data-day="15"]').disabled, false);
+});
+
+test("a chosen date that the server's clock now calls past is cleared after a rejection", async (t) => {
+  const p = await bookingPage(t, { bookingError: "Choose an upcoming date." });
+  await completeForm(p);
+  // After the failed send the server reports a date past the chosen one.
+  p.window.fetch = ((original) => async (path, options) =>
+    path.endsWith("/blocked-dates")
+      ? json([], 200, { date: new Date(Date.parse(nextMonthDay(20)) + 3 * 864e5).toUTCString() })
+      : original(path, options))(p.window.fetch);
+  p.submit();
+  await eventually(() => p.$("date").value === "", "stale date cleared");
+  assert.match(p.$("date-error").textContent, /has passed/);
+});
+
+for (const file of ["book.html", "contact.html"]) {
+  test(`${file}: the form always carries an empty honeypot, and a filled one reaches the server`, async (t) => {
+    const p = await bookingPage(t, { file });
+    p.addToken();
+    const honeypot = p.document.querySelector(".honeypot input[name=website]");
+    assert.ok(honeypot, "honeypot input exists inside the hidden wrapper");
+    assert.equal(honeypot.value, "");
+    assert.equal(honeypot.closest(".honeypot").hasAttribute("inert"), true);
+    assert.equal(honeypot.tabIndex, -1);
+    const send = async (website) => {
+      if (file === "book.html") {
+        await completeForm(p);
+        honeypot.value = website;
+        p.submit();
+        await eventually(() => p.posts().length > 0);
+        return p.posts().at(-1).body;
+      }
+      for (const [id, value] of [
+        ["name", "Example Customer"],
+        ["email", "customer@example.test"],
+        ["message", "Hello"],
+      ])
+        p.type(id, value);
+      honeypot.value = website;
+      p.$("contact-form").dispatchEvent(
+        new p.window.Event("submit", { bubbles: true, cancelable: true }),
+      );
+      await eventually(() => p.calls.some((c) => c.path === "/api/contact"));
+      return p.calls.find((c) => c.path === "/api/contact").body;
+    };
+    const sent = await send("");
+    assert.equal(sent.website, "", "an ordinary submission sends an empty honeypot value");
+    assert.equal("website" in sent, true);
+    if (file === "contact.html") {
+      await eventually(
+        () => p.$("contact-form").querySelector("button").textContent === "Send message",
+      );
+      p.calls.length = 0;
+      for (const [id, value] of [
+        ["name", "Example Customer"],
+        ["email", "customer@example.test"],
+        ["message", "Hello"],
+      ])
+        p.type(id, value);
+      honeypot.value = "spam";
+      p.$("contact-form").dispatchEvent(
+        new p.window.Event("submit", { bubbles: true, cancelable: true }),
+      );
+      await eventually(() => p.calls.some((c) => c.path === "/api/contact"));
+      assert.equal(p.calls.find((c) => c.path === "/api/contact").body.website, "spam");
+    }
+  });
+}
+
+test("a populated honeypot on the booking form is sent to the server unchanged", async (t) => {
+  const p = await bookingPage(t, { bookingError: "Unable to submit request." });
+  await completeForm(p);
+  p.document.querySelector(".honeypot input[name=website]").value = "spam";
+  p.submit();
+  await eventually(() => p.posts().length === 1);
+  assert.equal(p.posts()[0].body.website, "spam");
+});
+
+test("Turnstile is rendered once per slot, compact on very narrow screens and normal otherwise", async (t) => {
+  for (const [width, size] of [
+    [320, "compact"],
+    [339, "compact"],
+    [340, "normal"],
+    [1280, "normal"],
+  ]) {
+    for (const file of ["book.html", "contact.html"]) {
+      const p = await bookingPage(t, { file, width });
+      assert.equal(p.renders.length, 1, `${file}@${width}`);
+      assert.equal(p.renders[0].options.size, size, `${file}@${width}`);
+      assert.equal(p.renders[0].options.action, file === "book.html" ? "booking" : "contact");
+      assert.match(p.renders[0].options.sitekey, /^0x/);
+    }
+  }
 });

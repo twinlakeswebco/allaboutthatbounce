@@ -4,7 +4,11 @@ export const defaultSettings = {
   trip_multiplier: 4,
   max_delivery_miles: null,
 };
-async function request(path, options = {}) {
+// The browser's clock may be wrong. Responses that are never cached tell us the server's time,
+// which is what the Worker uses to decide whether a date is still in the future.
+let clockOffset = 0;
+export const serverNow = () => new Date(Date.now() + clockOffset);
+async function request(path, { trackClock, ...options } = {}) {
   const unavailable = "This service is unavailable right now. Please call 502-851-7596 for help.";
   // The server may or may not have acted on the request when no valid JSON came back.
   const unknown = () => Object.assign(new Error(unavailable), { outcomeUnknown: true });
@@ -19,6 +23,10 @@ async function request(path, options = {}) {
     });
   } catch {
     throw unknown();
+  }
+  if (trackClock) {
+    const sent = Date.parse(r.headers.get("date") || "");
+    if (Number.isFinite(sent)) clockOffset = sent - Date.now();
   }
   if (!r.headers.get("content-type")?.toLowerCase().includes("application/json")) throw unknown();
   let data;
@@ -54,7 +62,7 @@ export async function updateSettings(settings) {
   return post("/api/admin/settings", settings, "PUT");
 }
 export async function getBlockedDates(unitId) {
-  return request(`/api/units/${encodeURIComponent(unitId)}/blocked-dates`);
+  return request(`/api/units/${encodeURIComponent(unitId)}/blocked-dates`, { trackClock: true });
 }
 export async function getDeliveryQuote(address) {
   return post("/api/delivery-quote", { address });

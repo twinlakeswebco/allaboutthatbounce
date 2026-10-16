@@ -438,6 +438,33 @@ test("contact accepts a contact-action Turnstile token and rejects a booking one
   expect(ok.status).toBeLessThan(300);
   expect(await rows("contact_messages")).toHaveLength(1);
 });
+test("contact rejects a filled honeypot and stores nothing, and accepts the empty one the page sends", async () => {
+  const message = {
+    name: "Test Customer",
+    email: "customer@example.test",
+    message: "Hello",
+    turnstile_token: "fake-contact-token",
+  };
+  const bot = await request("/api/contact", {
+    method: "POST",
+    data: { ...message, website: "fake-bot" },
+  });
+  expect(bot.status).toBe(400);
+  expect(await rows("contact_messages")).toEqual([]);
+  expect(await rows("notification_outbox")).toEqual([]);
+  expect(providers.emails).toHaveLength(0);
+  const human = await request("/api/contact", {
+    method: "POST",
+    data: { ...message, website: "" },
+  });
+  expect(human.status).toBe(201);
+  expect(await rows("contact_messages")).toHaveLength(1);
+});
+test("booking accepts the empty honeypot value the page always sends", async () => {
+  const result = await createBooking({ website: "" });
+  expect(result.status).toBe(201);
+  expect(await requests()).toHaveLength(1);
+});
 test("outbox rows stay pending with no attempts used while email is unconfigured", async () => {
   const unconfigured = { ...env, RESEND_API_KEY: "" };
   const result = await request("/api/booking-requests", {

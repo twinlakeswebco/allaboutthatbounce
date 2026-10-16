@@ -105,14 +105,14 @@ export function unitCard(u, choose) {
 }
 const unavailableMessage =
   "This service is unavailable right now. Please call 502-851-7596 for help.";
-// The Worker decides what "today" is in America/New_York, so the calendar must too.
+// The Worker decides what "today" is, in America/New_York; use its clock, not the device's.
 const kentuckyToday = () =>
   new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/New_York",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).format(new Date());
+  }).format(api.serverNow());
 const currentMonth = () => {
   const [y, m] = kentuckyToday().split("-").map(Number);
   return new Date(y, m - 1, 1);
@@ -189,7 +189,31 @@ export function bookingCard(u, choose) {
   c.append(b);
   return c;
 }
+// Turnstile is rendered explicitly so a very narrow screen gets the documented compact widget
+// (150px wide); the normal widget is 300px wide and cannot fit a 320px screen.
+function mountTurnstile() {
+  const slots = document.querySelectorAll(".turnstile-slot");
+  if (!slots.length) return;
+  const render = () => {
+    if (typeof window.turnstile?.render !== "function") return;
+    for (const slot of slots) {
+      if (slot.dataset.mounted) continue;
+      slot.dataset.mounted = "true";
+      window.turnstile.render(slot, {
+        sitekey: slot.dataset.sitekey,
+        action: slot.dataset.action,
+        size: window.innerWidth < 340 ? "compact" : "normal",
+      });
+    }
+  };
+  if (window.turnstile) render();
+  else
+    document
+      .querySelector('script[src*="challenges.cloudflare.com"]')
+      ?.addEventListener("load", render);
+}
 setupMenu();
+mountTurnstile();
 const page = document.body.dataset.page;
 async function init() {
   if (page === "index") {
@@ -650,6 +674,9 @@ async function booking() {
         if (blocked.includes($("date").value)) {
           setDate("");
           $("date-error").textContent = "That date was just taken. Please choose another.";
+        } else if ($("date").value && $("date").value < kentuckyToday()) {
+          setDate("");
+          $("date-error").textContent = "That date has passed. Please choose an upcoming date.";
         }
         drawCalendar();
       } catch {}
