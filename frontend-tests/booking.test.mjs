@@ -29,8 +29,20 @@ async function eventually(check, label = "expected page state") {
   }
   assert.fail(`The page did not reach: ${label}`);
 }
+const kentuckyNow = () => {
+  const [y, m, d] = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  })
+    .format(new Date())
+    .split("-")
+    .map(Number);
+  return new Date(y, m - 1, d);
+};
 const nextMonthDay = (n) => {
-  const now = new Date();
+  const now = kentuckyNow();
   const d = new Date(now.getFullYear(), now.getMonth() + 1, n);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(n).padStart(2, "0")}`;
 };
@@ -57,6 +69,8 @@ async function bookingPage(t, overrides = {}) {
   dom.window.fetch = async (path, options = {}) => {
     const body = options.body ? JSON.parse(options.body) : undefined;
     calls.push({ path, method: options.method || "GET", body });
+    if (api.hold) await api.hold(path, body);
+    if (api.drop && path === api.drop) throw new TypeError("network dropped");
     if (path === "/api/units")
       return api.unitsError ? json({ error: "units down" }, 503) : json(api.units);
     if (path === "/api/settings")
@@ -151,8 +165,13 @@ async function bookingPage(t, overrides = {}) {
       $("calendar").querySelector('[data-day="20"]').click();
       assert.equal($("date").value, nextMonthDay(20));
     },
-    async quoteAddress(value = address) {
-      helpers.type("delivery_address", value);
+    setAddress(street = "100 Example St", city = "Anytown", zip = "40000") {
+      helpers.type("street", street);
+      helpers.type("city", city);
+      helpers.type("zip", zip);
+    },
+    async quoteAddress(street) {
+      helpers.setAddress(street);
       $("check-delivery").click();
       await eventually(() => $("quote-status").classList.contains("ok"), "quote shown");
     },
@@ -249,7 +268,7 @@ test("changing the address invalidates the quote and a stale quote cannot be sub
   await completeForm(p);
   assert.equal(p.$("delivery-price").textContent, "Free");
   assert.equal(p.$("total-price").textContent, "$160.00");
-  p.type("delivery_address", "200 Far Rd, Anytown, KY 40000");
+  p.setAddress("200 Far Rd");
   assert.equal(p.$("total-price").textContent, "—");
   assert.equal(p.$("delivery-price").textContent, "Add address");
   assert.match(p.$("quote-status").textContent, /changed the address/);
@@ -257,6 +276,8 @@ test("changing the address invalidates the quote and a stale quote cannot be sub
   await eventually(() => p.$("quote-status").classList.contains("ok"), "fresh quote");
   assert.equal(p.posts().length, 0, "submission must wait until the new price is reviewed");
   assert.match(p.$("booking-status").textContent, /delivery price is ready/);
+  assert.match(p.$("quote-status").textContent, /Estimated total: \$188\.00/);
+  assert.match(p.$("quote-status").textContent, /service area/);
   assert.equal(p.$("delivery-price").textContent, "$28.00");
   assert.equal(p.$("total-price").textContent, "$188.00");
   p.submit();
@@ -264,11 +285,13 @@ test("changing the address invalidates the quote and a stale quote cannot be sub
   assert.equal(p.posts()[0].body.delivery_address, "200 Far Rd, Anytown, KY 40000");
 });
 
-test("blur and the check button share one quote request per address", async (t) => {
+test("blur never starts a quote and repeated checks share one request per address", async (t) => {
   const p = await bookingPage(t);
   await p.choose();
-  p.type("delivery_address", address);
-  p.$("delivery_address").dispatchEvent(new p.window.Event("focusout", { bubbles: true }));
+  p.setAddress();
+  p.$("zip").dispatchEvent(new p.window.Event("focusout", { bubbles: true }));
+  assert.equal(p.quotes().length, 0, "leaving the field must not start a quote");
+  p.$("check-delivery").click();
   p.$("check-delivery").click();
   await eventually(() => p.$("quote-status").classList.contains("ok"));
   assert.equal(p.quotes().length, 1);
@@ -280,7 +303,7 @@ test("an outside-area quote blocks submission and points to Rena", async (t) => 
   await p.pickDate();
   p.fillDetails();
   p.addToken();
-  p.type("delivery_address", address);
+  p.setAddress();
   p.$("check-delivery").click();
   await eventually(() => !p.$("outside").hidden, "outside notice");
   assert.equal(p.$("total-price").textContent, "—");
@@ -294,7 +317,7 @@ test("an outside-area quote blocks submission and points to Rena", async (t) => 
 test("a delivery provider failure shows a readable error and never invents a price", async (t) => {
   const p = await bookingPage(t, { quoteError: "We could not calculate delivery right now." });
   await p.choose();
-  p.type("delivery_address", address);
+  p.setAddress();
   p.$("check-delivery").click();
   await eventually(() => p.$("quote-status").classList.contains("error"), "error state");
   assert.match(p.$("quote-status").textContent, /could not calculate delivery/);
@@ -315,7 +338,11 @@ test("validation marks every incomplete field and sends nothing", async (t) => {
   assert.match(p.$("phone-error").textContent, /10 digits/);
   assert.match(p.$("email-error").textContent, /valid email/);
   assert.match(p.$("event_type-error").textContent, /complete/i);
-  assert.match(p.$("delivery_address-error").textContent, /complete/i);
+  for (const id of ["street", "city", "zip"])
+    assert.match(p.$(id + "-error").textContent, /complete/i, id);
+  p.type("zip", "4000");
+  p.submit();
+  assert.match(p.$("zip-error").textContent, /5-digit ZIP/);
   assert.equal(p.$("name").getAttribute("aria-invalid"), "true");
   p.type("name", "Example Customer");
   assert.equal(p.$("name-error").textContent, "");
@@ -346,6 +373,7 @@ test("a valid request is sent without client prices and ends in a pending acknow
   assert.equal(post.body.website, "");
   assert.ok(post.body.idempotency_key);
   assert.equal(post.body.delivery_address, address);
+  for (const part of ["street", "city", "zip"]) assert.equal(part in post.body, false, part);
   for (const key of ["total", "price", "delivery_fee", "unit_price"])
     assert.equal(key in post.body, false, key);
   assert.equal(p.$("booking-flow").hidden, true);
@@ -357,7 +385,7 @@ test("a valid request is sent without client prices and ends in a pending acknow
   assert.match(text, /cash or check at delivery/);
   assert.match(text, /request-1/);
   assert.doesNotMatch(text, /delivered|has been sent to your inbox/i);
-  assert.equal(p.window.document.activeElement, p.$("confirmation"));
+  assert.equal(p.window.document.activeElement, p.$("confirm-title"));
   assert.equal(p.resets, 1);
 });
 
@@ -368,15 +396,15 @@ test("a failed submission keeps the form, shows the error and reuses the key onl
   await completeForm(p);
   p.submit();
   await eventually(() => p.$("booking-status").textContent.includes("no longer available"));
-  await eventually(() => p.$("send-request").textContent.trim() === "Send my request");
+  await eventually(() => p.$("send-request").textContent.trim() === "Send rental request");
   assert.equal(p.$("confirmation").hidden, true);
   assert.equal(p.$("name").value, "Example Customer");
   assert.equal(p.$("send-request").disabled, false);
-  assert.equal(p.$("send-request").textContent.trim(), "Send my request");
+  assert.equal(p.$("send-request").textContent.trim(), "Send rental request");
   p.submit();
   await eventually(() => p.posts().length === 2);
   assert.equal(p.posts()[1].body.idempotency_key, p.posts()[0].body.idempotency_key);
-  await eventually(() => p.$("send-request").textContent.trim() === "Send my request");
+  await eventually(() => p.$("send-request").textContent.trim() === "Send rental request");
   p.type("phone", "502-555-0111");
   p.submit();
   await eventually(() => p.posts().length === 3);
@@ -414,9 +442,158 @@ test("?unit preselects a listed inflatable and explains an unlisted one", async 
 test("the booking page contains no inline styles (blocked by the site's CSP) or private origin", async () => {
   const html = await readFile(new URL("book.html", root), "utf8");
   assert.doesNotMatch(html, /\sstyle\s*=/i);
+  assert.doesNotMatch(await readFile(new URL("contact.html", root), "utf8"), /\sstyle\s*=/i);
   const js = await readFile(new URL("app.js", root), "utf8");
   assert.doesNotMatch(js, /setAttribute\(\s*["']style["']/);
   assert.match(html, /allaboutthatbounce7596@gmail\.com/);
   assert.match(html, /502-851-7596/);
   for (const text of [html, js]) assert.doesNotMatch(text, /Grayson|ORIGIN_ADDRESS/);
+});
+
+test("a slow quote for an earlier address can never replace the quote for the current one", async (t) => {
+  const holds = new Map();
+  const hold = (key) => {
+    let release;
+    holds.set(key, new Promise((resolve) => (release = resolve)));
+    return release;
+  };
+  const releaseOld = hold("100 Example St, Anytown, KY 40000");
+  const releaseNew = hold("200 Far Rd, Anytown, KY 40000");
+  const p = await bookingPage(t, {
+    hold: (path, body) => (path === "/api/delivery-quote" ? holds.get(body.address) : undefined),
+    quote: (a) =>
+      a.startsWith("200")
+        ? { status: "fee", distance_miles: 20, fee: 28 }
+        : { status: "free", distance_miles: 8.2, fee: 0 },
+  });
+  await p.choose();
+  await p.pickDate();
+  p.fillDetails();
+  p.addToken();
+  p.setAddress();
+  p.$("check-delivery").click();
+  p.setAddress("200 Far Rd");
+  p.$("check-delivery").click();
+  releaseNew();
+  await eventually(() => p.$("delivery-price").textContent === "$28.00", "new quote");
+  releaseOld();
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  assert.equal(p.$("delivery-price").textContent, "$28.00");
+  assert.equal(p.$("total-price").textContent, "$188.00");
+  p.submit();
+  await eventually(() => p.posts().length === 1, "post");
+  assert.equal(p.posts()[0].body.delivery_address, "200 Far Rd, Anytown, KY 40000");
+});
+
+test("editing the address while Send is waiting for a quote does not send or show an old price", async (t) => {
+  let release;
+  const gate = new Promise((resolve) => (release = resolve));
+  const p = await bookingPage(t, {
+    hold: (path) => (path === "/api/delivery-quote" ? gate : undefined),
+  });
+  await completeFormWithoutQuote(p);
+  p.submit();
+  await eventually(() => p.$("delivery-price").textContent === "Checking…");
+  p.setAddress("999 Other Rd");
+  release();
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  assert.equal(p.posts().length, 0);
+  assert.equal(p.$("total-price").textContent, "—");
+  assert.match(p.$("quote-status").textContent, /changed the address/);
+  assert.equal(p.$("booking-status").textContent, "");
+});
+
+async function completeFormWithoutQuote(p) {
+  await p.choose();
+  await p.pickDate();
+  p.fillDetails();
+  p.setAddress();
+  p.addToken();
+}
+
+test("availability for an earlier inflatable never replaces the one now selected", async (t) => {
+  const second = { ...exampleUnit, id: "second", name: "Second Slide" };
+  const releases = {};
+  const holds = {
+    "/api/units/example-unit/blocked-dates": new Promise((r) => (releases.first = r)),
+    "/api/units/second/blocked-dates": new Promise((r) => (releases.second = r)),
+  };
+  const p = await bookingPage(t, {
+    units: [exampleUnit, second],
+    hold: (path) => holds[path],
+    blocked: [],
+  });
+  const dates = {
+    "/api/units/example-unit/blocked-dates": [nextMonthDay(20)],
+    "/api/units/second/blocked-dates": [nextMonthDay(21)],
+  };
+  p.window.fetchOverride = dates;
+  const original = p.window.fetch;
+  p.window.fetch = async (path, options) =>
+    path.endsWith("/blocked-dates")
+      ? (await holds[path], json(dates[path]))
+      : original(path, options);
+  await eventually(() => p.document.querySelectorAll("#units .pick-btn").length === 2);
+  const buttons = p.document.querySelectorAll("#units .pick-btn");
+  buttons[0].click();
+  buttons[1].click();
+  releases.second();
+  await eventually(() => p.$("calendar").querySelector(".days"), "second unit calendar");
+  releases.first();
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  p.$("calendar").querySelector('[data-nav="next"]').click();
+  assert.equal(p.$("calendar").querySelector('[data-day="21"]').disabled, true);
+  assert.equal(p.$("calendar").querySelector('[data-day="20"]').disabled, false);
+  assert.equal(p.$("chosen-name").textContent, "Second Slide");
+});
+
+test("switching inflatables clears a date that was chosen for the previous one", async (t) => {
+  const second = { ...exampleUnit, id: "second", name: "Second Slide" };
+  const p = await bookingPage(t, { units: [exampleUnit, second] });
+  await p.choose(0);
+  await p.pickDate();
+  assert.equal(p.$("date").value, nextMonthDay(20));
+  await p.choose(1);
+  assert.equal(p.$("date").value, "");
+  assert.match(p.$("date-readout").textContent, /pick your date again/);
+});
+
+test("an unknown submission outcome says so and a resend reuses the same key", async (t) => {
+  const p = await bookingPage(t, { drop: "/api/booking-requests" });
+  await completeForm(p);
+  p.submit();
+  await eventually(() => p.$("booking-status").textContent.includes("couldn’t confirm"));
+  assert.doesNotMatch(p.$("booking-status").textContent, /was not submitted|not been sent/i);
+  assert.match(p.$("booking-status").textContent, /502-851-7596/);
+  await eventually(() => p.$("send-request").textContent.trim() === "Send rental request");
+  p.submit();
+  await eventually(() => p.posts().length === 2);
+  assert.equal(p.posts()[1].body.idempotency_key, p.posts()[0].body.idempotency_key);
+});
+
+test("common phone formats are accepted and sent as typed", async (t) => {
+  for (const phone of ["+1 (502) 555-0100", "502.555.0100", "(502) 555 0100"]) {
+    const p = await bookingPage(t);
+    await completeForm(p);
+    p.type("phone", phone);
+    p.submit();
+    await eventually(() => p.posts().length === 1, phone);
+    assert.equal(p.posts()[0].body.phone, phone);
+  }
+});
+
+test("the honeypot is hidden from assistive technology and cannot take focus", async () => {
+  for (const name of ["book.html", "contact.html"]) {
+    const html = await readFile(new URL(name, root), "utf8");
+    assert.match(
+      html,
+      /<div class="honeypot" aria-hidden="true" inert>\s*<input[^>]*name="website"[^>]*tabindex="-1"/,
+      name,
+    );
+  }
+});
+
+test("the page offers no live region around the whole review panel", async () => {
+  const html = await readFile(new URL("book.html", root), "utf8");
+  assert.doesNotMatch(html, /<dl class="review-list"[^>]*aria-live/);
 });

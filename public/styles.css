@@ -697,6 +697,7 @@ main {
   left: -10000px;
   width: 1px;
   height: 1px;
+  overflow: hidden;
   opacity: 0;
 }
 .status:empty {
@@ -723,7 +724,7 @@ main {
   color: #7d0f2e;
 }
 #check-delivery {
-  margin-top: 4px;
+  margin-top: 16px;
 }
 .summary-unit {
   font-size: 1.25rem;
@@ -785,5 +786,13 @@ main {
   .confirmation .review-list div {
     grid-template-columns: 160px 1fr;
     gap: 12px;
+  }
+}
+@media (max-width: 359px) {
+  /* The Turnstile widget is a fixed 300px wide; scale it so it fits a 320px screen. */
+  .cf-turnstile {
+    transform: scale(0.8);
+    transform-origin: left top;
+    margin-bottom: -13px;
   }
 }

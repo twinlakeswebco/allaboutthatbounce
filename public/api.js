@@ -6,6 +6,8 @@ export const defaultSettings = {
 };
 async function request(path, options = {}) {
   const unavailable = "This service is unavailable right now. Please call 502-851-7596 for help.";
+  // The server may or may not have acted on the request when no valid JSON came back.
+  const unknown = () => Object.assign(new Error(unavailable), { outcomeUnknown: true });
   let r;
   try {
     r = await fetch(path, {
@@ -16,17 +18,16 @@ async function request(path, options = {}) {
       },
     });
   } catch {
-    throw new Error(unavailable);
+    throw unknown();
   }
-  if (!r.headers.get("content-type")?.toLowerCase().includes("application/json"))
-    throw new Error(unavailable);
+  if (!r.headers.get("content-type")?.toLowerCase().includes("application/json")) throw unknown();
   let data;
   try {
     data = await r.json();
   } catch {
-    throw new Error(unavailable);
+    throw unknown();
   }
-  if (data === null || typeof data !== "object") throw new Error(unavailable);
+  if (data === null || typeof data !== "object") throw unknown();
   if (!r.ok)
     throw new Error(data?.error || "Something went wrong. Please try again or call 502-851-7596.");
   return data;

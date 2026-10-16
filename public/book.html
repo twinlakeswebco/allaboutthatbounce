@@ -110,8 +110,8 @@
                   <input type="hidden" name="date" id="date" />
                   <div id="date-error" class="error" role="status"></div>
                   <ul class="legend" id="date-help">
-                    <li><span class="swatch open"></span>Available</li>
-                    <li><span class="swatch chosen"></span>Your date</li>
+                    <li><span class="swatch open"></span>Open for requests</li>
+                    <li><span class="swatch chosen"></span>Selected</li>
                     <li><span class="swatch taken"></span>Booked or unavailable</li>
                   </ul>
                   <p class="muted">
@@ -189,23 +189,54 @@
                   <h2 id="delivery-title">
                     <span class="step-num" aria-hidden="true">4</span>Where is the party?
                   </h2>
-                  <label for="delivery_address">Event delivery address</label
-                  ><input
-                    id="delivery_address"
-                    name="delivery_address"
-                    type="text"
-                    required
-                    autocomplete="street-address"
-                    maxlength="500"
-                    placeholder="Street, city, KY, ZIP"
-                    aria-describedby="delivery_address-hint delivery_address-error"
-                  />
-                  <div class="error" id="delivery_address-error"></div>
                   <p class="muted" id="delivery_address-hint">
                     We deliver to Oldham, Shelby, Henry, Trimble and Jefferson counties in Kentucky.
-                    Include the street, city and ZIP.
+                    Rena checks every address before confirming.
                     <span id="delivery-policy"></span>
                   </p>
+                  <div class="form-grid">
+                    <div class="wide">
+                      <label for="street">Street address</label
+                      ><input
+                        id="street"
+                        name="street"
+                        type="text"
+                        required
+                        autocomplete="address-line1"
+                        maxlength="200"
+                        aria-describedby="street-error"
+                      />
+                      <div class="error" id="street-error"></div>
+                    </div>
+                    <div>
+                      <label for="city">City</label
+                      ><input
+                        id="city"
+                        name="city"
+                        type="text"
+                        required
+                        autocomplete="address-level2"
+                        maxlength="100"
+                        aria-describedby="city-error"
+                      />
+                      <div class="error" id="city-error"></div>
+                    </div>
+                    <div>
+                      <label for="zip">ZIP code <span class="muted">(Kentucky)</span></label
+                      ><input
+                        id="zip"
+                        name="zip"
+                        type="text"
+                        required
+                        inputmode="numeric"
+                        autocomplete="postal-code"
+                        maxlength="10"
+                        aria-describedby="zip-error"
+                      />
+                      <div class="error" id="zip-error"></div>
+                    </div>
+                  </div>
+                  <input type="hidden" name="delivery_address" id="delivery_address" />
                   <button type="button" id="check-delivery" class="secondary">
                     Check delivery price
                   </button>
@@ -221,14 +252,9 @@
                     details when confirming your date. No advance deposit is needed, and nothing is
                     paid online.
                   </div>
-                  <input
-                    class="honeypot"
-                    type="text"
-                    name="website"
-                    tabindex="-1"
-                    autocomplete="off"
-                    aria-hidden="true"
-                  />
+                  <div class="honeypot" aria-hidden="true" inert>
+                    <input type="text" name="website" tabindex="-1" autocomplete="off" />
+                  </div>
                 </section>
               </form>
               <aside class="panel summary" aria-labelledby="summary-title">
@@ -236,9 +262,9 @@
                   <span class="step-num" aria-hidden="true">5</span>Review and send.
                 </h2>
                 <p id="chosen-name" class="summary-unit"></p>
-                <dl class="review-list" aria-live="polite">
+                <dl class="review-list">
                   <div>
-                    <dt>Date</dt>
+                    <dt>Requested date</dt>
                     <dd id="sum-date"></dd>
                   </div>
                   <div>
@@ -271,9 +297,9 @@
                 </div>
                 <p id="total-note" class="muted"></p>
                 <div class="notice">
-                  <strong>Request only, not a reservation.</strong>Your date isn’t booked until Rena
-                  confirms it. No deposit. Payment is due in full at delivery, before setup, by cash
-                  or check.
+                  <strong>Submit a rental request.</strong>Your date is not held until Rena confirms
+                  it. No deposit. Payment is due in full at delivery, before setup, by cash or
+                  check.
                 </div>
                 <div
                   class="cf-turnstile"
@@ -281,7 +307,7 @@
                   data-action="booking"
                 ></div>
                 <button type="submit" id="send-request" form="booking-form" class="send">
-                  Send my request
+                  Send rental request
                 </button>
                 <div id="booking-status" class="status" role="alert"></div>
               </aside>
@@ -290,7 +316,7 @@
         </div>
         <section id="confirmation" class="panel confirmation" tabindex="-1" hidden>
           <span class="tag pending-tag">Pending · waiting for Rena</span>
-          <h2>Request received. You are not booked yet.</h2>
+          <h2 id="confirm-title" tabindex="-1">Request received. You are not booked yet.</h2>
           <p class="lead">
             Rena will review your request and contact you to confirm your date, delivery and final
             total. <strong>Your date is not held until Rena confirms it.</strong>

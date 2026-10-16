@@ -30,6 +30,8 @@ export function fieldMessage(el) {
     return "Enter a phone number with at least 10 digits.";
   if (el.type === "email" && value && (el.validity.typeMismatch || !emailPattern.test(value)))
     return "Enter a valid email address, like name@example.com.";
+  if (el.id === "zip" && value && !/^\d{5}(-\d{4})?$/.test(value))
+    return "Enter a 5-digit ZIP code.";
   if (el.minLength > 0 && value && value.length < el.minLength)
     return `Enter at least ${el.minLength} characters.`;
   if (!el.validity.valid && !el.validity.valueMissing && !el.validity.typeMismatch)
@@ -103,7 +105,18 @@ export function unitCard(u, choose) {
 }
 const unavailableMessage =
   "This service is unavailable right now. Please call 502-851-7596 for help.";
-const firstOfMonth = (d) => new Date(d.getFullYear(), d.getMonth(), 1);
+// The Worker decides what "today" is in America/New_York, so the calendar must too.
+const kentuckyToday = () =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+const currentMonth = () => {
+  const [y, m] = kentuckyToday().split("-").map(Number);
+  return new Date(y, m - 1, 1);
+};
 function longDate(iso) {
   const [y, m, d] = iso.split("-").map(Number);
   return new Date(y, m - 1, d).toLocaleDateString("en-US", {
@@ -226,13 +239,14 @@ const validQuote = (q) =>
 async function booking() {
   const form = $("booking-form"),
     submit = $("send-request"),
-    address = $("delivery_address"),
+    deliveryAddress = $("delivery_address"),
+    addressFields = ["street", "city", "zip"].map($),
     checkBtn = $("check-delivery");
   let unit = null,
     blocked = [],
     datesState = "idle",
     datesError = "",
-    month = firstOfMonth(new Date()),
+    month = currentMonth(),
     selectionVersion = 0;
   let quote = null,
     quotedAddress = "",
@@ -246,6 +260,15 @@ async function booking() {
     idempotency = crypto.randomUUID(),
     lastSignature = "";
 
+  // The Worker takes one address string; the form collects it in autofill-friendly parts.
+  const partialAddress = () => {
+    const [street, city, zip] = addressFields.map((f) => f.value.trim());
+    return [street, city, zip && "KY " + zip].filter(Boolean).join(", ");
+  };
+  const currentAddress = () => {
+    const [street, city, zip] = addressFields.map((f) => f.value.trim());
+    return street && city && /^\d{5}(-\d{4})?$/.test(zip) ? `${street}, ${city}, KY ${zip}` : "";
+  };
   function setStatus(message, kind = "") {
     const s = $("booking-status");
     s.textContent = message;
@@ -277,10 +300,13 @@ async function booking() {
       note = "We can’t price delivery to this address online. Please call or email Rena.";
     } else if (quote) {
       const miles = `About ${quote.distance_miles} driving miles away`;
+      const totalText = unit ? ` Estimated total: ${money(unit.price + quote.fee)}.` : "";
       status.textContent =
-        quote.status === "free"
-          ? `${miles}, so delivery is free. Rena confirms the final details.`
-          : `${miles}, past our ${freeMiles ? freeMiles + "-mile " : ""}free delivery zone, so delivery is ${money(quote.fee)}. Rena confirms the final details.`;
+        (quote.status === "free"
+          ? `${miles}, so delivery is free.`
+          : `${miles}, past our ${freeMiles ? freeMiles + "-mile " : ""}free delivery zone, so delivery is ${money(quote.fee)}.`) +
+        totalText +
+        " Rena confirms your address is in our service area and the final details.";
       status.classList.add("ok");
       delivery = quote.status === "free" ? "Free" : money(quote.fee);
       total = unit ? money(unit.price + quote.fee) : "—";
@@ -308,14 +334,16 @@ async function booking() {
     set("sum-phone", val("phone"), "Not added yet");
     set("sum-email", val("email"), "Not added yet");
     set("sum-event", val("event_type"), "Not chosen yet");
-    set("sum-address", val("delivery_address"), "Not added yet");
+    set("sum-address", partialAddress(), "Not added yet");
     renderQuote();
     submit.disabled = busy || datesState === "loading";
   }
   function setDate(iso) {
     $("date").value = iso;
     $("date-error").textContent = "";
-    $("date-readout").textContent = iso ? "Your date: " + longDate(iso) : "No date chosen yet.";
+    $("date-readout").textContent = iso
+      ? "Requested date: " + longDate(iso)
+      : "No date chosen yet.";
     renderSummary();
   }
   function focusCalendar() {
@@ -352,9 +380,9 @@ async function booking() {
       month.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
     );
     label.setAttribute("aria-live", "polite");
-    const today = new Date();
+    const thisMonth = currentMonth();
     prev.disabled =
-      month.getFullYear() === today.getFullYear() && month.getMonth() === today.getMonth();
+      month.getFullYear() === thisMonth.getFullYear() && month.getMonth() === thisMonth.getMonth();
     const go = (delta, nav) => () => {
       month = new Date(month.getFullYear(), month.getMonth() + delta, 1);
       drawCalendar();
@@ -373,7 +401,7 @@ async function booking() {
     });
     for (let i = 0; i < month.getDay(); i++) days.append(text("span", ""));
     const count = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
-    const todayIso = api.localDate();
+    const todayIso = kentuckyToday();
     const chosen = $("date").value;
     let tabStop = null;
     for (let n = 1; n <= count; n++) {
@@ -434,7 +462,7 @@ async function booking() {
       const dates = await api.getBlockedDates(unit.id);
       if (ticket !== selectionVersion) return;
       blocked = Array.isArray(dates) ? dates.filter((d) => typeof d === "string") : [];
-      month = firstOfMonth(new Date());
+      month = currentMonth();
       datesState = "ready";
     } catch (e) {
       if (ticket !== selectionVersion) return;
@@ -485,7 +513,8 @@ async function booking() {
       : "";
   }
   function fetchQuote() {
-    const addr = address.value.trim();
+    const addr = currentAddress();
+    if (!addr) return Promise.resolve(false);
     if (quote && quotedAddress === addr) return Promise.resolve(true);
     if (quoting && quotingAddress === addr) return quoting;
     const ticket = ++quoteVersion;
@@ -520,17 +549,21 @@ async function booking() {
     renderSummary();
     return run;
   }
-  address.addEventListener("input", () => {
-    invalidateQuote();
+  function onAddressChange() {
+    deliveryAddress.value = currentAddress();
+    const now = currentAddress();
+    const same = (quote && quotedAddress === now) || (quoting && quotingAddress === now);
+    if (!same && (quote || quoting || quoteError)) invalidateQuote();
     renderSummary();
-  });
+  }
+  for (const field of addressFields) {
+    field.addEventListener("input", onAddressChange);
+    field.addEventListener("change", onAddressChange);
+  }
   checkBtn.addEventListener("click", () => {
-    if (checkField(address)) return address.focus();
-    if (address.value.trim().length < 5) {
-      $("delivery_address-error").textContent = "Enter your complete delivery address.";
-      address.setAttribute("aria-invalid", "true");
-      return address.focus();
-    }
+    let first;
+    for (const field of addressFields) if (checkField(field) && !first) first = field;
+    if (first) return first.focus();
     fetchQuote();
   });
   form.addEventListener("input", (e) => {
@@ -539,16 +572,11 @@ async function booking() {
     renderSummary();
   });
   form.addEventListener("change", renderSummary);
+  // Quoting is never started on blur: a status line appearing above the Send button while
+  // a finger is on it can shift the button and swallow the tap.
   form.addEventListener("focusout", (e) => {
     const el = e.target;
-    if (!el.matches?.("input,select") || !el.id || !el.value.trim()) return;
-    checkField(el);
-    if (
-      el === address &&
-      address.value.trim().length >= 5 &&
-      !el.getAttribute("aria-invalid")?.includes("true")
-    )
-      fetchQuote();
+    if (el.matches?.("input,select") && el.id && el.value.trim()) checkField(el);
   });
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -564,11 +592,14 @@ async function booking() {
       setStatus("Please fix the items marked above, then send your request again.", "error");
       return;
     }
-    if (!quote || quotedAddress !== address.value.trim()) {
+    if (!quote || quotedAddress !== currentAddress()) {
       const ok = await fetchQuote();
+      // The address changed while the price was loading; the quote area already says so.
+      if (!ok && !quoteError && !quoting) return setStatus("");
+      if (busy) return;
       setStatus(
         ok && quote?.status !== "outside_area"
-          ? "Your delivery price is ready. Look over the total, then press Send my request."
+          ? "Your delivery price is ready. Look over the total, then press Send rental request."
           : ok
             ? "We can’t take an online request for this address. Please call or email Rena."
             : "Your request has not been sent. We need a delivery price for your address first.",
@@ -594,6 +625,7 @@ async function booking() {
       return;
     }
     const fields = Object.fromEntries(new FormData(form));
+    for (const part of ["street", "city", "zip"]) delete fields[part];
     const payload = { ...fields, delivery_address: quotedAddress, unit_id: unit.id };
     // A retry of the same request reuses its key; changed details get a new one.
     const signature = JSON.stringify(Object.entries({ ...payload, website: "" }).sort());
@@ -606,7 +638,12 @@ async function booking() {
       const r = await api.createBookingRequest({ ...payload, idempotency_key: idempotency });
       showConfirmation(r, fields);
     } catch (err) {
-      setStatus(err.message, "error");
+      setStatus(
+        err.outcomeUnknown
+          ? "We couldn’t confirm that your request was received. Complete the security check and press Send again; if you change nothing, it won’t create a duplicate. Or call Rena at 502-851-7596 to check."
+          : err.message,
+        "error",
+      );
       try {
         const dates = await api.getBlockedDates(unit.id);
         blocked = Array.isArray(dates) ? dates.filter((d) => typeof d === "string") : blocked;
@@ -619,7 +656,7 @@ async function booking() {
     } finally {
       window.turnstile?.reset();
       busy = false;
-      submit.textContent = "Send my request";
+      submit.textContent = "Send rental request";
       renderSummary();
     }
   });
@@ -629,7 +666,7 @@ async function booking() {
     const fee = r.delivery_quote?.fee;
     list.replaceChildren(
       row("Inflatable", r.unit_name || unit.name),
-      row("Date", longDate(r.date || fields.date)),
+      row("Requested date", longDate(r.date || fields.date)),
       row("Delivery to", r.delivery_address || fields.delivery_address),
       row("Rental price", money2(r.unit_price) || money(unit.price)),
       row("Delivery", fee === 0 ? "Free" : money2(fee) || "Rena will confirm"),
@@ -641,7 +678,7 @@ async function booking() {
     $("booking-flow").hidden = true;
     $("confirmation").hidden = false;
     document.title = "Request received | All About That Bounce";
-    $("confirmation").focus();
+    $("confirm-title").focus();
     $("confirmation").scrollIntoView({ behavior: "auto", block: "start" });
   }
   async function loadUnits() {
