@@ -788,3 +788,19 @@ main {
     gap: 12px;
   }
 }
+
+/* Remove the preview-watermark elements after final payment is confirmed. */
+.preview-watermark {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  user-select: none;
+  background: url("assets/preview-watermark.svg") repeat;
+  background-size: 360px 220px;
+}
+.website-credit {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.875rem;
+}
