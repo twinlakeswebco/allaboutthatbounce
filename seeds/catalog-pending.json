@@ -1,0 +1,34 @@
+{
+  "units": [
+    {
+      "id": "purple-castle",
+      "name": "Purple Castle",
+      "size": "13 x 13 x 13 ft",
+      "rules": "700 lb max; 1 adult supervisor",
+      "price": null
+    },
+    {
+      "id": "princess-combo",
+      "name": "Princess Combo",
+      "size": "15 x 16 x 22 ft; dimension order unconfirmed",
+      "rules": "700 lb max; 1 adult supervisor",
+      "price": null
+    },
+    {
+      "id": "boxing-ring",
+      "name": "Boxing Ring",
+      "size": "16 x 16 ft; height unconfirmed",
+      "rules": "700 lb max; 1 adult supervisor",
+      "price": null
+    }
+  ],
+  "unconfirmed_dimensions": {
+    "double-lane-palm-tree-combo": "15 x 17 x 35",
+    "palm-tree": "13 x 18 x 30; 18 ft tall",
+    "palm-tree-deluxe": "15 x 19 x 37; 19 ft tall",
+    "racer-obstacle-course": "8 x 12 x 27"
+  },
+  "deposit_policy": "$100 on inflatables over $375; collection and refund terms pending. Online payment is not enabled.",
+  "weather": "Owner reports no setup with thunderstorm chances or winds over 15 mph; cancellation terms pending.",
+  "tax": "Owner reports never charging tax; treatment unconfirmed."
+}
