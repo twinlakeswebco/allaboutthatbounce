@@ -789,15 +789,47 @@ main {
   }
 }
 
-/* Remove the preview-watermark elements after final payment is confirmed. */
-.preview-watermark {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  pointer-events: none;
-  user-select: none;
-  background: url("assets/preview-watermark.svg") repeat;
-  background-size: 360px 220px;
+/* Remove the preview-bar elements after final payment is confirmed. */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  max-height: 100svh;
+  overflow-y: auto;
+}
+.skip {
+  z-index: 30;
+}
+.header-inner {
+  flex-wrap: wrap;
+}
+.preview-bar {
+  margin: 0;
+  padding: 10px 14px;
+  max-width: 260px;
+  background: var(--yellow);
+  color: var(--ink);
+  border-radius: 10px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  text-align: center;
+}
+.preview-bar strong {
+  white-space: nowrap;
+}
+@media (max-width: 999px) {
+  .preview-bar {
+    flex-basis: 100%;
+    max-width: none;
+  }
+}
+@media (max-width: 699px) {
+  .preview-bar {
+    order: 1;
+  }
+  .nav {
+    order: 2;
+  }
 }
 .website-credit {
   flex-basis: 100%;
