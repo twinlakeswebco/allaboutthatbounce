@@ -134,7 +134,7 @@ async function settings(env) {
 }
 async function blocked(env, id) {
   const r = await env.DB.prepare(
-    "SELECT date FROM blocks WHERE unit_id=? AND date>=? UNION SELECT event_date AS date FROM booking_requests WHERE unit_id=? AND status='confirmed' AND event_date>=? ORDER BY date",
+    "SELECT date FROM blocks WHERE unit_id IN (SELECT other_id FROM conflicting_units WHERE unit_id=?) AND date>=? UNION SELECT event_date AS date FROM booking_requests WHERE unit_id IN (SELECT other_id FROM conflicting_units WHERE unit_id=?) AND status='confirmed' AND event_date>=? ORDER BY date",
   )
     .bind(id, nyToday(), id, nyToday())
     .all();
@@ -173,7 +173,7 @@ async function booking(req, env, ctx) {
     .first();
   if (!u) return fail("That inflatable or date is no longer available. Choose another date.", 409);
   const unavailable = await env.DB.prepare(
-    "SELECT 1 AS x FROM blocks WHERE unit_id=? AND date=? UNION SELECT 1 FROM booking_requests WHERE unit_id=? AND event_date=? AND status='confirmed' LIMIT 1",
+    "SELECT 1 AS x FROM blocks WHERE unit_id IN (SELECT other_id FROM conflicting_units WHERE unit_id=?) AND date=? UNION SELECT 1 FROM booking_requests WHERE unit_id IN (SELECT other_id FROM conflicting_units WHERE unit_id=?) AND event_date=? AND status='confirmed' LIMIT 1",
   )
     .bind(u.id, x.date, u.id, x.date)
     .first();
@@ -302,7 +302,7 @@ async function status(req, env, ctx, id, email) {
     let st;
     if (x.status === "confirmed")
       st = env.DB.prepare(
-        "UPDATE booking_requests SET status='confirmed',decided_at=datetime('now'),decided_by=?,decision_token=? WHERE id=? AND status='pending' AND NOT EXISTS(SELECT 1 FROM blocks WHERE unit_id=booking_requests.unit_id AND date=booking_requests.event_date)",
+        "UPDATE booking_requests SET status='confirmed',decided_at=datetime('now'),decided_by=?,decision_token=? WHERE id=? AND status='pending' AND NOT EXISTS(SELECT 1 FROM blocks WHERE unit_id IN (SELECT other_id FROM conflicting_units WHERE unit_id=booking_requests.unit_id) AND date=booking_requests.event_date)",
       ).bind(email, decisionToken, id);
     else
       st = env.DB.prepare(
@@ -430,6 +430,11 @@ async function block(env, id, date, email, on) {
 async function route(req, env, ctx) {
   const u = new URL(req.url),
     p = u.pathname;
+  if (["/media/catalog/sunset-splash.jpeg", "/media/catalog/sunset-kingdom.jpeg"].includes(p)) {
+    const asset = new URL(req.url);
+    asset.pathname = p.replace("/media/catalog/", "/assets/catalog/");
+    return env.ASSETS.fetch(new Request(asset, req));
+  }
   if (p.startsWith("/media/")) return media(env, decodeURIComponent(p.slice(7)));
   if (!p.startsWith("/api/")) return env.ASSETS.fetch(req);
   if (req.method === "GET" && p === "/api/units") return listUnits(env);

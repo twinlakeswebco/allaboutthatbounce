@@ -27,13 +27,13 @@ for (const [kind, build] of [
     const mail = build();
     for (const content of [mail.text, mail.html]) {
       for (const expected of [
-        "7 and 11 a.m.",
-        "6 p.m.",
+        "Eight hours",
+        "pickup",
         "day before",
         "before setup",
         "Cash or check",
-        "2 hours",
-        "No advance deposit",
+        "48 hours",
+        "$100 deposit",
         "502-851-7596",
         "allaboutthatbounce7596@gmail.com",
       ])

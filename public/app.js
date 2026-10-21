@@ -507,7 +507,7 @@ async function booking() {
       : "No date chosen yet.";
     $("date-error").textContent = "";
     $("booking").hidden = false;
-    $("deposit").hidden = !u.deposit_required;
+    $("deposit").hidden = !(u.price >= 375 || u.deposit_required);
     document.querySelectorAll("#units .card").forEach((card) => {
       const on = card === c;
       const btn = card.querySelector(".pick-btn");

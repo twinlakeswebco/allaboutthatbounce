@@ -394,7 +394,7 @@ test("a valid request is sent without client prices and ends in a pending acknow
   assert.match(text, /not booked yet/);
   assert.match(text, /not held until Rena confirms/);
   assert.match(text, /queued a receipt email to customer@example\.test/);
-  assert.match(text, /cash or check at delivery/);
+  assert.match(text, /cash or\s+check at delivery/);
   assert.match(text, /request-1/);
   assert.doesNotMatch(text, /delivered|has been sent to your inbox/i);
   assert.equal(p.window.document.activeElement, p.$("confirm-title"));
@@ -434,11 +434,11 @@ test("a request already taken by someone else clears the chosen date", async (t)
   assert.equal(p.$("confirmation").hidden, true);
 });
 
-test("special arrangements still state that no advance deposit is needed", async (t) => {
+test("special arrangements explain deposits after approval", async (t) => {
   const p = await bookingPage(t, { units: [{ ...exampleUnit, deposit_required: true }] });
   await p.choose();
   assert.equal(p.$("deposit").hidden, false);
-  assert.match(p.$("deposit").textContent, /No advance deposit is needed/);
+  assert.match(p.$("deposit").textContent, /payment instructions after approving/);
 });
 
 test("?unit preselects a listed inflatable and explains an unlisted one", async (t) => {

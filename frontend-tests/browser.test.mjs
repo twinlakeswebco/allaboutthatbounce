@@ -244,7 +244,7 @@ test("HTML on contact submission cannot produce a false message-sent confirmatio
   assert.doesNotMatch(p.document.getElementById("contact-status").textContent, /Message sent/);
 });
 
-test("special arrangements retain the no-advance-deposit policy", async (t) => {
+test("special arrangements explain deposits after approval", async (t) => {
   const p = await page(t, "book", "app.js", async () =>
     json([{ ...exampleUnit, deposit_required: true }]),
   );
@@ -252,6 +252,9 @@ test("special arrangements retain the no-advance-deposit policy", async (t) => {
   p.document.querySelector("#units button").click();
   await eventually(() => p.document.querySelector("#calendar button"));
   assert.equal(p.document.getElementById("deposit").hidden, false);
-  assert.match(p.document.getElementById("deposit").textContent, /No advance deposit is needed/);
+  assert.match(
+    p.document.getElementById("deposit").textContent,
+    /payment instructions after approving/,
+  );
   assert.doesNotMatch(p.document.getElementById("deposit").textContent, /any deposit or/);
 });

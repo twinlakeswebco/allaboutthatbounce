@@ -39,6 +39,7 @@ beforeAll(async () => {
   expect(env.TEST_MIGRATIONS.map((m) => m.name)).toEqual([
     "0001_init.sql",
     "0002_decision_token.sql",
+    "0003_shared_inventory.sql",
   ]);
   expect((await env.DB.prepare("SELECT COUNT(*) AS n FROM units").first()).n).toBe(0);
   const pair = await crypto.subtle.generateKey(

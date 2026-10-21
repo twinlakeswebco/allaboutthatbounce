@@ -13,11 +13,11 @@ export function mailRow(kind, to, reply, subject, text, html) {
 }
 const CONTACT = "Call 502-851-7596 or email allaboutthatbounce7596@gmail.com.";
 const LOGISTICS = [
-  "Delivery is generally between 7 and 11 a.m., and pickup starts at 6 p.m. It’s an all-day, 8-hour rental. We’ll call the day before to confirm times.",
+  "Eight hours are guaranteed. Delivery and pickup times are confirmed personally. Extra hours or overnight use may be available by arrangement, depending on the next booking. We will call the day before to confirm times.",
   "Setup takes 30–45 minutes and ends with a quick safety review with the responsible adult.",
-  "No advance deposit is needed. Payment is due in full at delivery, before setup. Cash or check; exact cash, please.",
+  "A $100 deposit applies once per booking for rentals totaling $375 or more, credited toward your balance. Rena provides payment instructions after approving your request. No payment is collected on this form. The remaining balance is due at delivery, before setup. Cash or check; exact cash, please.",
   "Please have a clear, debris-free setup area and a dedicated outlet within 75 feet.",
-  "If the weather turns, you can cancel free up to 2 hours before drop-off.",
+  "We do not set up outdoors below 50°F, during thunderstorms, or with winds over 15 mph. Rain alone does not necessarily mean cancellation; Rena will discuss conditions with you. If we cancel for any reason, including weather, your deposit is refunded. If your plans change, please give us at least 48 hours’ notice when possible. Contact Rena to discuss cancellations and any deposit arrangements.",
 ];
 // Paragraphs become text (blank-line separated) and escaped HTML (first one bold).
 const body = (ps) => ({
