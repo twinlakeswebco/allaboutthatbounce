@@ -125,7 +125,7 @@ test("public pages have one logo link, one menu and unique element IDs", async (
       assert.equal(document.querySelectorAll("#menu").length, 1, name);
       assert.equal(document.querySelectorAll("header .brand").length, 1, name);
       const logo = document.querySelector("header .brand img");
-      assert.equal(logo?.getAttribute("src"), "assets/aatb-logo-transparent.png", name);
+      assert.equal(logo?.getAttribute("src"), "assets/aatbky-logo.png", name);
       await access(new URL(logo.getAttribute("src"), root));
       const ids = Array.from(document.querySelectorAll("[id]"), (el) => el.id);
       assert.equal(ids.length, new Set(ids).size, name);

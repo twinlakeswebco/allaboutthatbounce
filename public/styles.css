@@ -116,10 +116,10 @@ header {
 }
 .logo {
   display: block;
-  width: clamp(180px, 22vw, 210px);
+  width: clamp(108px, 14vw, 126px);
   height: auto;
-  aspect-ratio: 5 / 3;
-  object-fit: cover;
+  aspect-ratio: 1;
+  object-fit: contain;
   flex-shrink: 0;
 }
 .nav {
