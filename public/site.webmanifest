@@ -1,5 +1,5 @@
 {
-  "name": "All About That Bounce",
+  "name": "All About That Bounce, KY",
   "short_name": "AATBKY",
   "icons": [
     {
@@ -15,7 +15,7 @@
       "purpose": "maskable"
     }
   ],
-  "theme_color": "#ffffff",
-  "background_color": "#ffffff",
+  "theme_color": "#f5eb00",
+  "background_color": "#8c04d0",
   "display": "standalone"
 }
