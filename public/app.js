@@ -321,7 +321,7 @@ async function booking() {
     } else if (quote?.status === "outside_area") {
       status.textContent = "";
       delivery = "Outside our area";
-      note = "We can’t price delivery to this address online. Please call or email Rena.";
+      note = "We can’t price delivery to this address online. Please call or email us.";
     } else if (quote) {
       const miles = `About ${quote.distance_miles} driving miles away`;
       const totalText = unit ? ` Estimated total: ${money(unit.price + quote.fee)}.` : "";
@@ -330,11 +330,11 @@ async function booking() {
           ? `${miles}, so delivery is free.`
           : `${miles}, past our ${freeMiles ? freeMiles + "-mile " : ""}free delivery zone, so delivery is ${money(quote.fee)}.`) +
         totalText +
-        " Rena confirms your address is in our service area and the final details.";
+        " We confirm your address is in our service area and the final details.";
       status.classList.add("ok");
       delivery = quote.status === "free" ? "Free" : money(quote.fee);
       total = unit ? money(unit.price + quote.fee) : "—";
-      note = "Estimated total is the rental price plus delivery. Rena confirms the final total.";
+      note = "Estimated total is the rental price plus delivery. We confirm the final total.";
     } else {
       status.textContent = quoteHint;
       if (quoteHint) status.classList.add("warn");
@@ -625,7 +625,7 @@ async function booking() {
         ok && quote?.status !== "outside_area"
           ? "Your delivery price is ready. Look over the total, then press Send rental request."
           : ok
-            ? "We can’t take an online request for this address. Please call or email Rena."
+            ? "We can’t take an online request for this address. Please call or email us."
             : "Your request has not been sent. We need a delivery price for your address first.",
         ok && quote?.status !== "outside_area" ? "ok" : "error",
       );
@@ -633,7 +633,7 @@ async function booking() {
     }
     if (quote.status === "outside_area") {
       setStatus(
-        "We can’t take an online request for this address. Please call or email Rena.",
+        "We can’t take an online request for this address. Please call or email us.",
         "error",
       );
       return;
@@ -643,7 +643,7 @@ async function booking() {
       setStatus(
         window.turnstile
           ? "Please complete the security check above the Send button, then try again."
-          : "The security check did not load. Refresh the page, or call Rena at 502-851-7596 to make your request.",
+          : "The security check did not load. Refresh the page, or call us at 502-851-7596 to make your request.",
         "error",
       );
       return;
@@ -664,7 +664,7 @@ async function booking() {
     } catch (err) {
       setStatus(
         err.outcomeUnknown
-          ? "We couldn’t confirm that your request was received. Complete the security check and press Send again; if you change nothing, it won’t create a duplicate. Or call Rena at 502-851-7596 to check."
+          ? "We couldn’t confirm that your request was received. Complete the security check and press Send again; if you change nothing, it won’t create a duplicate. Or call us at 502-851-7596 to check."
           : err.message,
         "error",
       );
@@ -696,8 +696,8 @@ async function booking() {
       row("Requested date", longDate(r.date || fields.date)),
       row("Delivery to", r.delivery_address || fields.delivery_address),
       row("Rental price", money2(r.unit_price) || money(unit.price)),
-      row("Delivery", fee === 0 ? "Free" : money2(fee) || "Rena will confirm"),
-      row("Estimated total", money2(r.total) || "Rena will confirm"),
+      row("Delivery", fee === 0 ? "Free" : money2(fee) || "We will confirm"),
+      row("Estimated total", money2(r.total) || "We will confirm"),
     );
     $("confirm-email-note").textContent =
       `We’ve queued a receipt email to ${r.email || fields.email}.`;
@@ -728,7 +728,7 @@ async function booking() {
       $("booking-flow").hidden = true;
       $("empty-state").hidden = false;
       $("page-lead").textContent =
-        "Online requests aren’t open yet. Rena is glad to help by phone or email.";
+        "Online requests aren’t open yet. We are glad to help by phone or email.";
       return;
     }
     box.replaceChildren(...units.map((u) => bookingCard(u, choose)));

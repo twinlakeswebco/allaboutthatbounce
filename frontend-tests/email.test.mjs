@@ -29,7 +29,11 @@ for (const [kind, build] of [
       for (const expected of [
         "Eight hours",
         "pickup",
-        "day before",
+        "text your delivery ETA the evening before",
+        "10 p.m.",
+        "$10 service fee",
+        "including gusts",
+        "sign the waiver",
         "before setup",
         "Cash or check",
         "48 hours",

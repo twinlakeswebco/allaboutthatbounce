@@ -309,7 +309,7 @@ test("blur never starts a quote and repeated checks share one request per addres
   assert.equal(p.quotes().length, 1);
 });
 
-test("an outside-area quote blocks submission and points to Rena", async (t) => {
+test("an outside-area quote blocks submission and points to our team", async (t) => {
   const p = await bookingPage(t, { quote: { status: "outside_area", distance_miles: 90, fee: 0 } });
   await p.choose();
   await p.pickDate();
@@ -392,7 +392,7 @@ test("a valid request is sent without client prices and ends in a pending acknow
   const text = p.$("confirmation").textContent;
   assert.match(text, /Pending/);
   assert.match(text, /not booked yet/);
-  assert.match(text, /not held until Rena confirms/);
+  assert.match(text, /not held until we confirm/);
   assert.match(text, /queued a receipt email to customer@example\.test/);
   assert.match(text, /cash or\s+check at delivery/);
   assert.match(text, /request-1/);
