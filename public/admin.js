@@ -120,7 +120,6 @@ function editUnit(u) {
   form.querySelectorAll(".error").forEach((e) => (e.textContent = ""));
   for (const key of ["id", "name", "description", "size", "mode", "price"])
     form.elements.namedItem(key).value = u?.[key] ?? (key === "mode" ? "dry" : "");
-  form.elements.deposit_required.checked = u?.deposit_required || false;
   editingPhotos = u?.photos || [];
   $("unit-heading").textContent = u ? "Edit inflatable" : "Add inflatable";
   form.hidden = false;
@@ -170,7 +169,6 @@ $("unit-form").addEventListener("submit", (e) => {
         mode: data.mode,
         price: Number(data.price),
         photos,
-        deposit_required: form.elements.deposit_required.checked,
       });
       form.hidden = true;
       await refresh();

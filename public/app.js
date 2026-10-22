@@ -64,6 +64,7 @@ export function safePhoto(src) {
     ? src
     : "placeholder.svg";
 }
+const hasWetOption = (u) => Array.isArray(u.rental_options) && u.rental_options.length > 1;
 export function unitCard(u, choose) {
   const c = text("article", "", "card");
   const img = document.createElement("img");
@@ -84,7 +85,11 @@ export function unitCard(u, choose) {
   c.append(img);
   const b = text("div", "", "card-body");
   b.append(
-    text("span", u.mode === "wet" ? "Water fun" : "Dry fun", "tag"),
+    text(
+      "span",
+      hasWetOption(u) ? "Wet or dry" : u.mode === "wet" ? "Water fun" : "Dry fun",
+      "tag",
+    ),
     text("h3", u.name),
     text("p", u.description),
     text("p", u.size, "muted"),
@@ -167,19 +172,28 @@ export function bookingCard(u, choose) {
   const specs = text("dl", "", "specs");
   for (const [k, v] of [
     ["Specs", u.size],
-    ["Use", u.mode === "wet" ? "Wet (used with water)" : "Dry (no water)"],
+    [
+      "Use",
+      hasWetOption(u)
+        ? "Choose wet or dry"
+        : u.mode === "wet"
+          ? "Wet (used with water)"
+          : "Dry (no water)",
+    ],
   ]) {
     const row = text("div", "");
     row.append(text("dt", k), text("dd", v));
     specs.append(row);
   }
   b.append(
-    text("span", u.mode === "wet" ? "Wet" : "Dry", "tag"),
+    text("span", hasWetOption(u) ? "Wet or dry" : u.mode === "wet" ? "Wet" : "Dry", "tag"),
     text("h3", u.name),
     text("p", u.description),
     specs,
   );
   if (photos.length > 1) b.append(text("p", "Scroll sideways on the photo to see more.", "muted"));
+  if (hasWetOption(u))
+    price.textContent = `Dry ${money(u.price)} / Wet ${money(u.rental_options.find((option) => option.mode === "wet").price)}`;
   b.append(price);
   const btn = text("button", "Choose " + u.name, "pick-btn");
   btn.type = "button";
@@ -361,6 +375,7 @@ async function booking() {
     set("sum-address", partialAddress(), "Not added yet");
     renderQuote();
     submit.disabled = busy || datesState === "loading";
+    $("rental-mode").disabled = busy;
   }
   function setDate(iso) {
     $("date").value = iso;
@@ -500,6 +515,23 @@ async function booking() {
     ++selectionVersion;
     const hadDate = !!$("date").value;
     unit = u;
+    const selector = $("rental-mode");
+    selector.replaceChildren();
+    const options = u.rental_options || [u];
+    for (const optionUnit of options) {
+      const option = text(
+        "option",
+        `${optionUnit.mode === "wet" ? "Wet (with water)" : "Dry (no water)"} — ${money(optionUnit.price)}`,
+      );
+      option.value = optionUnit.id;
+      option.selected = optionUnit.id === u.id;
+      selector.append(option);
+    }
+    $("rental-use").hidden = options.length < 2;
+    selector.onchange = () => {
+      const selected = options.find((option) => option.id === selector.value);
+      if (selected) choose({ ...selected, rental_options: options }, c);
+    };
     blocked = [];
     $("date").value = "";
     $("date-readout").textContent = hadDate
@@ -507,7 +539,6 @@ async function booking() {
       : "No date chosen yet.";
     $("date-error").textContent = "";
     $("booking").hidden = false;
-    $("deposit").hidden = !(u.price >= 375 || u.deposit_required);
     document.querySelectorAll("#units .card").forEach((card) => {
       const on = card === c;
       const btn = card.querySelector(".pick-btn");
@@ -723,6 +754,17 @@ async function booking() {
       $("units-retry").hidden = false;
       return;
     }
+    // Existing wet records share physical components with their dry counterpart.
+    // Keep their authoritative IDs and prices; show both choices together.
+    const byId = new Map(units.map((u) => [u.id, u]));
+    for (const u of units) {
+      const wet = byId.get(u.id + "-wet");
+      if (u.mode === "dry" && wet?.mode === "wet") {
+        u.rental_options = [{ ...u }, { ...wet }];
+        wet.rental_options = u.rental_options;
+      }
+    }
+    units = units.filter((u) => !u.rental_options || u.mode === "dry");
     box.setAttribute("aria-busy", "false");
     if (!units.length) {
       $("booking-flow").hidden = true;
@@ -734,9 +776,14 @@ async function booking() {
     box.replaceChildren(...units.map((u) => bookingCard(u, choose)));
     const wanted = new URLSearchParams(location.search).get("unit");
     if (wanted) {
-      const i = units.findIndex((u) => u.id === wanted);
-      if (i >= 0) await choose(units[i], box.children[i]);
-      else {
+      const i = units.findIndex(
+        (u) => u.id === wanted || u.rental_options?.some((option) => option.id === wanted),
+      );
+      if (i >= 0) {
+        const group = units[i];
+        const selected = group.rental_options?.find((option) => option.id === wanted) || group;
+        await choose({ ...selected, rental_options: group.rental_options }, box.children[i]);
+      } else {
         $("units-notice").textContent =
           "The inflatable you picked isn’t listed right now. Choose another one below.";
         $("units-notice").hidden = false;

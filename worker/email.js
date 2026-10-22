@@ -14,10 +14,10 @@ export function mailRow(kind, to, reply, subject, text, html) {
 const CONTACT = "Call 502-851-7596 or email allaboutthatbounce7596@gmail.com.";
 const LOGISTICS = [
   "Eight hours are guaranteed. Delivery and pickup times are confirmed personally. Extra hours or overnight use may be available by arrangement, depending on the next booking. We will text your delivery ETA the evening before, sometimes as late as 10 p.m. Your event start and end times are party times, not delivery times. You are welcome to call us with questions.",
-  "Setup takes 30–45 minutes and ends with a quick safety review with the responsible adult.",
-  "A $100 deposit applies once per booking for rentals totaling $375 or more, credited toward your balance. We provide payment instructions after approving your request. No payment is collected on this form. The remaining balance is due at delivery, before setup. Cash or check only; checks carry a $10 service fee. Please have payment ready when we arrive. Someone must be present to sign the waiver. We cannot set up without payment or accept payment at pickup.",
+  "Setup takes 10–50 minutes, depending on your rental, and ends with a quick safety review with the responsible adult.",
+  "The full balance is due at delivery, before setup. Cash or check only; checks carry a $10 service fee. Please have payment ready when we arrive. Someone must be present to sign the waiver. We cannot set up without payment or accept payment at pickup.",
   "Please have a clear, debris-free setup area and a dedicated outlet within 75 feet.",
-  "We do not set up outdoors below 50°F, during thunderstorms, or with winds over 15 mph, including gusts. Rain alone does not necessarily mean cancellation; we will discuss conditions with you. If we cancel for any reason, including weather, your deposit is refunded. If your plans change, please give us at least 48 hours’ notice when possible. Contact us to discuss cancellations and any deposit arrangements.",
+  "We do not set up outdoors below 50°F, during thunderstorms, or with winds over 15 mph, including gusts. Rain alone does not necessarily mean cancellation; we will discuss conditions with you. If your plans change, please give us at least 48 hours’ notice when possible. Contact us to discuss cancellations.",
 ];
 // Paragraphs become text (blank-line separated) and escaped HTML (first one bold).
 const body = (ps) => ({

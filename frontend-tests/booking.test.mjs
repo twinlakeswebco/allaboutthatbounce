@@ -434,11 +434,62 @@ test("a request already taken by someone else clears the chosen date", async (t)
   assert.equal(p.$("confirmation").hidden, true);
 });
 
-test("special arrangements explain deposits after approval", async (t) => {
-  const p = await bookingPage(t, { units: [{ ...exampleUnit, deposit_required: true }] });
+test("legacy deposit flags cannot display a deposit notice", async (t) => {
+  const p = await bookingPage(t, {
+    units: [{ ...exampleUnit, price: 850, deposit_required: true }],
+  });
   await p.choose();
-  assert.equal(p.$("deposit").hidden, false);
-  assert.match(p.$("deposit").textContent, /payment instructions after approving/);
+  assert.equal(p.$("deposit"), null);
+  assert.doesNotMatch(p.document.body.textContent, /deposit/i);
+});
+
+test("wet and dry prices stay together and submit the selected catalog option", async (t) => {
+  const wet = {
+    ...exampleUnit,
+    id: "example-unit-wet",
+    name: "Example Castle (Wet)",
+    mode: "wet",
+    price: 185,
+  };
+  const p = await bookingPage(t, { units: [exampleUnit, wet] });
+  await p.choose();
+  assert.equal(p.document.querySelectorAll("#units .card").length, 1);
+  assert.match(
+    p.document.querySelector("#units .price").textContent,
+    /Dry \$160.00 \/ Wet \$185.00/,
+  );
+  assert.equal(p.$("rental-use").hidden, false);
+  p.type("rental-mode", wet.id);
+  await eventually(() => p.$("unit-price").textContent === "$185.00");
+  assert.match(p.$("chosen-name").textContent, /Wet/);
+  await eventually(() =>
+    p.calls.some((call) => call.path === "/api/units/example-unit-wet/blocked-dates"),
+  );
+  await eventually(() => p.$("calendar").querySelector(".days button"));
+  p.fillDetails();
+  await p.pickDate();
+  p.setAddress();
+  p.addToken();
+  p.$("check-delivery").click();
+  await eventually(() => p.$("total-price").textContent === "$185.00");
+  p.submit();
+  await eventually(() => p.calls.some((call) => call.path === "/api/booking-requests"));
+  assert.equal(p.calls.find((call) => call.path === "/api/booking-requests").body.unit_id, wet.id);
+});
+
+test("wet option links preselect wet, and switching back restores dry price", async (t) => {
+  const wet = {
+    ...exampleUnit,
+    id: "example-unit-wet",
+    name: "Example Castle (Wet)",
+    mode: "wet",
+    price: 185,
+  };
+  const p = await bookingPage(t, { units: [exampleUnit, wet], search: "?unit=example-unit-wet" });
+  await eventually(() => p.$("unit-price").textContent === "$185.00");
+  assert.equal(p.$("rental-mode").value, wet.id);
+  p.type("rental-mode", exampleUnit.id);
+  await eventually(() => p.$("unit-price").textContent === "$160.00");
 });
 
 test("?unit preselects a listed inflatable and explains an unlisted one", async (t) => {

@@ -6,13 +6,13 @@
     <title>Book | All About That Bounce</title>
     <meta
       name="description"
-      content="Request a bounce house, slide, combo or obstacle course for your Kentucky party or event. Serving Oldham, Shelby, Henry, Trimble and Jefferson counties. Eight hours guaranteed. Deposit applies to bookings of $375 or more."
+      content="Request a bounce house, slide, combo or obstacle course for your Kentucky party or event. Serving Oldham, Shelby, Henry, Trimble and Jefferson counties. Eight hours guaranteed."
     />
     <meta name="theme-color" content="#5632bc" />
     <meta property="og:title" content="Book | All About That Bounce" />
     <meta
       property="og:description"
-      content="Request a bounce house, slide, combo or obstacle course for your Kentucky party or event. Serving Oldham, Shelby, Henry, Trimble and Jefferson counties. Eight hours guaranteed. Deposit applies to bookings of $375 or more."
+      content="Request a bounce house, slide, combo or obstacle course for your Kentucky party or event. Serving Oldham, Shelby, Henry, Trimble and Jefferson counties. Eight hours guaranteed."
     />
     <link rel="canonical" href="https://aatbky.us/book" />
     <meta property="og:url" content="https://aatbky.us/book" />
@@ -66,9 +66,6 @@
           <li>
             <strong>Pay at delivery</strong> by cash or check. Checks carry a $10 service fee.
           </li>
-          <li>
-            <strong>$100 deposit</strong> on bookings of $375 or more, arranged after approval.
-          </li>
         </ul>
       </div>
       <div class="wrap">
@@ -86,7 +83,7 @@
           </div>
           <p class="muted">
             Serving Oldham, Shelby, Henry, Trimble and Jefferson counties, Kentucky. Payment is cash
-            or check for the remaining balance at delivery. Contact us for deposit arrangements.
+            or check for the full balance at delivery.
           </p>
         </section>
         <div id="booking-flow">
@@ -111,6 +108,13 @@
                   <h2 id="date-title" tabindex="-1">
                     <span class="step-num" aria-hidden="true">2</span>Pick your date.
                   </h2>
+                  <div id="rental-use" hidden>
+                    <label for="rental-mode">Choose wet or dry</label>
+                    <select id="rental-mode" aria-describedby="rental-use-help"></select>
+                    <p id="rental-use-help" class="muted">
+                      Your selected use and price will appear in your request.
+                    </p>
+                  </div>
                   <p id="date-readout" class="readout" role="status">No date chosen yet.</p>
                   <div
                     id="calendar"
@@ -259,12 +263,6 @@
                     <a href="mailto:allaboutthatbounce7596@gmail.com">email us</a> so we can discuss
                     your event personally.
                   </div>
-                  <div id="deposit" class="notice" hidden>
-                    <strong>Deposit arrangements after approval.</strong>A $100 deposit applies once
-                    per booking for rentals totaling $375 or more, credited toward your balance. We
-                    provide payment instructions after approving your request. No payment is
-                    collected on this form.
-                  </div>
                   <div class="honeypot" aria-hidden="true" inert>
                     <input type="text" name="website" tabindex="-1" autocomplete="off" />
                   </div>
@@ -311,10 +309,8 @@
                 <p id="total-note" class="muted"></p>
                 <div class="notice">
                   <strong>Submit a rental request.</strong>Your date is not held until we confirm
-                  it. A $100 deposit applies once per booking for rentals totaling $375 or more,
-                  credited toward your balance. We provide payment instructions after approving your
-                  request. No payment is collected on this form. The remaining balance is due at
-                  delivery, before setup, by cash or check.
+                  it. No payment is collected on this form. The full balance is due at delivery,
+                  before setup, by cash or check.
                 </div>
                 <div
                   class="turnstile-slot"
@@ -341,10 +337,7 @@
           <ol class="next-steps">
             <li>We review your request and either confirm it or decline it.</li>
             <li>We contact you by email, text or phone either way.</li>
-            <li>
-              If approved, we arrange any required deposit. Pay the remaining balance by cash or
-              check at delivery, before setup.
-            </li>
+            <li>Pay the full balance by cash or check at delivery, before setup.</li>
           </ol>
           <div class="notice">
             <strong id="confirm-email-note"></strong>Email can be delayed or land in spam, so check
@@ -385,8 +378,9 @@
           <details class="policy">
             <summary><strong>Do you deliver and set up?</strong></summary>
             <p>
-              Yes. We deliver, set up, take down, and pick up. Setup takes about 30–45 minutes, and
-              we walk through the safety rules with you before the fun starts.
+              Yes. We deliver, set up, take down, and pick up. Setup takes about 10–50 minutes,
+              depending on your rental, and we walk through the safety rules with you before the fun
+              starts.
             </p>
           </details>
           <details class="policy">
@@ -401,18 +395,10 @@
           <details class="policy">
             <summary><strong>How do I pay?</strong></summary>
             <p>
-              The remaining balance is due at delivery, before setup. We take cash or check. Exact
-              cash is appreciated. Checks carry a $10 service fee; returned checks have a $35 fee.
-              Please have payment ready when we arrive. Someone must be present to sign the waiver.
-              We cannot set up without payment or accept payment at pickup.
-            </p>
-          </details>
-          <details class="policy">
-            <summary><strong>Do I need a deposit?</strong></summary>
-            <p>
-              A $100 deposit applies once per booking for rentals totaling $375 or more, credited
-              toward your balance. We provide payment instructions after approving your request. No
-              payment is collected on this form.
+              The full balance is due at delivery, before setup. We take cash or check. Exact cash
+              is appreciated. Checks carry a $10 service fee; returned checks have a $35 fee. Please
+              have payment ready when we arrive. Someone must be present to sign the waiver. We
+              cannot set up without payment or accept payment at pickup.
             </p>
           </details>
           <details class="policy">
@@ -435,9 +421,8 @@
             <p>
               We do not set up outdoors below 50°F, during thunderstorms, or with winds over 15 mph,
               including gusts. Rain alone does not necessarily mean cancellation; we will discuss
-              conditions with you. If we cancel for any reason, including weather, your deposit is
-              refunded. If your plans change, please give us at least 48 hours’ notice when
-              possible. Contact us to discuss cancellations and any deposit arrangements.
+              conditions with you. If your plans change, please give us at least 48 hours’ notice
+              when possible. Contact us to discuss cancellations.
             </p>
           </details>
           <details class="policy">

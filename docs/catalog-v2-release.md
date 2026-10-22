@@ -14,9 +14,9 @@ Wet/dry options and packages share physical components. Database triggers reject
 
 ## Payment and policy scope
 
-A $100 deposit applies once per booking at $375 or more and is credited toward the balance. Rena provides payment instructions after approval. This release does not collect online payments or send payment links. The form still requests one rental option at a time; customers should contact Rena to combine multiple units into one booking and one deposit. Multi-unit subtotal interpretation remains to be confirmed.
+Customers pay the full balance by cash or check at delivery, before setup. No advance payment is collected. Wet/dry pairs are presented together with a use selector; the selected existing option ID supplies the server price and shared component availability.
 
-Eight hours are guaranteed; additional hours and overnight arrangements require personal approval. No outdoor setup below 50 F, during thunderstorms, or with winds over 15 mph. Business cancellations refund the deposit. Customers are asked to give 48 hours' notice when possible; no customer-cancellation penalty or refund policy is invented. Tax handling is unchanged pending owner guidance.
+Eight hours are guaranteed; additional hours and overnight arrangements require personal approval. No outdoor setup below 50 F, during thunderstorms, or with winds over 15 mph. Customers are asked to give 48 hours' notice when possible. Setup takes 10–50 minutes depending on the rental. We send the delivery ETA the day before the event, sometimes as late as 10 p.m. Tax handling is unchanged pending owner guidance.
 
 ## Validation
 

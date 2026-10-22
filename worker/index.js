@@ -25,7 +25,6 @@ function unitOut(u, photos = []) {
     mode: u.mode,
     price: centsToDollars(u.price_cents),
     photos,
-    deposit_required: !!u.deposit_required,
   };
 }
 function requestOut(r) {
@@ -344,29 +343,13 @@ async function saveUnitRoute(req, env, id) {
     await env.DB.prepare(
       "UPDATE units SET name=?,description=?,size=?,mode=?,price_cents=?,deposit_required=?,updated_at=datetime('now') WHERE id=?",
     )
-      .bind(
-        x.name.trim(),
-        x.description.trim(),
-        x.size.trim(),
-        x.mode,
-        cents,
-        x.deposit_required ? 1 : 0,
-        id,
-      )
+      .bind(x.name.trim(), x.description.trim(), x.size.trim(), x.mode, cents, 0, id)
       .run();
   else
     await env.DB.prepare(
       "INSERT INTO units(id,name,description,size,mode,price_cents,deposit_required,sort_order) VALUES(?,?,?,?,?,?,?,COALESCE((SELECT MAX(sort_order)+1 FROM units),1))",
     )
-      .bind(
-        uid,
-        x.name.trim(),
-        x.description.trim(),
-        x.size.trim(),
-        x.mode,
-        cents,
-        x.deposit_required ? 1 : 0,
-      )
+      .bind(uid, x.name.trim(), x.description.trim(), x.size.trim(), x.mode, cents, 0)
       .run();
   let photos;
   try {

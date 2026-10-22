@@ -63,7 +63,7 @@ test("v2 import is repeatable, preserves photos, and prices components and wet r
   expect(units.find((u) => u.id === "big-kahuna-slip-slide").price).toBe(225);
   expect(units.find((u) => u.id === "level-up-package").price).toBe(450);
   expect(units.find((u) => u.id === "princess-combo-wet").price).toBe(300);
-  expect(units.find((u) => u.id === "7-element-package").deposit_required).toBe(true);
+  expect(units.every((u) => !("deposit_required" in u))).toBe(true);
   expect(units.find((u) => u.id === "sunset-splash").photos).toEqual([
     "/media/catalog/sunset-splash.jpeg",
   ]);

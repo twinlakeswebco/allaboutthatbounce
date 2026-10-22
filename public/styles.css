@@ -178,7 +178,7 @@ p {
   font-size: 1.15rem;
 }
 .hero-art {
-  background: var(--aqua);
+  background: var(--yellow);
   border-radius: 60px 24px 60px 24px;
   padding: 22px;
   position: relative;

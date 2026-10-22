@@ -37,12 +37,13 @@ for (const [kind, build] of [
         "before setup",
         "Cash or check",
         "48 hours",
-        "$100 deposit",
+        "10–50 minutes",
         "502-851-7596",
         "allaboutthatbounce7596@gmail.com",
       ])
         assert.ok(content.includes(expected), expected);
     }
+    assert.doesNotMatch(mail.text + mail.html, /deposit/i);
     assert.doesNotMatch(mail.html, /<script>/);
     assert.match(mail.html, /&lt;script&gt;/);
   });
